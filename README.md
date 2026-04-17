@@ -1,6 +1,6 @@
 # 🏫 Hệ Thống Quản Lý Trung Tâm Tiếng Anh 
 
-> Đồ án môn học PRN232 - Ứng dụng quản lý trung tâm đào tạo tiếng Anh được thiết kế theo kiến trúc Client-Server, đảm bảo tính bảo mật, hiệu năng và chuẩn hóa dữ liệu.
+>  Ứng dụng quản lý trung tâm đào tạo tiếng Anh được thiết kế theo kiến trúc Client-Server, đảm bảo tính bảo mật, hiệu năng và chuẩn hóa dữ liệu.
 
 ---
 
