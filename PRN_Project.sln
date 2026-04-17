@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34601.278
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PRN_API", "PRN_API\PRN_API.csproj", "{CF8C2C0F-B30A-4AF2-939B-10EF7ABD57C6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PRN_Client", "PRN_Client\PRN_Client.csproj", "{6CBE2C29-72CC-469C-8CD3-5396040CC355}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CF8C2C0F-B30A-4AF2-939B-10EF7ABD57C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF8C2C0F-B30A-4AF2-939B-10EF7ABD57C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF8C2C0F-B30A-4AF2-939B-10EF7ABD57C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF8C2C0F-B30A-4AF2-939B-10EF7ABD57C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6CBE2C29-72CC-469C-8CD3-5396040CC355}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CBE2C29-72CC-469C-8CD3-5396040CC355}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CBE2C29-72CC-469C-8CD3-5396040CC355}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CBE2C29-72CC-469C-8CD3-5396040CC355}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B3987BFE-1CC4-42D9-9E8E-69811A6C9C76}
+	EndGlobalSection
+EndGlobal

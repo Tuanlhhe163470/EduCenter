@@ -1,0 +1,208 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Quản lý Khóa học";
+}
+
+<div class="card-panel">
+    <div class="card-panel-header">
+        <div class="toolbar">
+            <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="text" id="searchCourse" placeholder="Tìm kiếm khóa học..." />
+            </div>
+            <select class="filter-select" id="filterPrice">
+                <option value="">Tất cả mức giá</option>
+                <option value="5000000">Dưới 5,000,000đ</option>
+                <option value="10000000">Dưới 10,000,000đ</option>
+                <option value="20000000">Dưới 20,000,000đ</option>
+            </select>
+            <select class="filter-select" id="sortDuration">
+                <option value="">Sắp xếp thời lượng</option>
+                <option value="asc">Tăng dần</option>
+                <option value="desc">Giảm dần</option>
+            </select>
+        </div>
+        <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#courseModal" onclick="openAddCourse()">
+            <i class="bi bi-plus-lg"></i> Thêm Khóa Học
+        </button>
+    </div>
+    <div class="card-panel-body p-0">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Tên khóa học</th>
+                    <th>Học phí (VNĐ)</th>
+                    <th>Thời lượng (giờ)</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody id="courseTableBody">
+                <tr>
+                    <td colspan="5" class="text-center py-4" style="color:var(--gray);">Đang tải...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade modal-custom" id="courseModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="courseModalTitle">Thêm Khóa Học</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editCourseId" />
+                <div class="form-group-custom">
+                    <label>Tên khóa học</label>
+                    <input type="text" class="form-control" id="courseName" placeholder="Nhập tên khóa học" />
+                    <div class="invalid-feedback">Vui lòng nhập tên khóa học</div>
+                </div>
+                <div class="form-group-custom">
+                    <label>Học phí (VNĐ)</label>
+                    <input type="number" class="form-control" id="coursePrice" placeholder="Nhập học phí" />
+                    <div class="invalid-feedback">Vui lòng nhập học phí</div>
+                </div>
+                <div class="form-group-custom">
+                    <label>Thời lượng (giờ)</label>
+                    <input type="number" class="form-control" id="courseDuration" placeholder="Nhập số giờ học" />
+                    <div class="invalid-feedback">Vui lòng nhập thời lượng</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn-primary-custom" onclick="saveCourse()">
+                    <i class="bi bi-check-lg"></i> Lưu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var API_BASE = 'http://localhost:5054';
+        var token = '@Context.Session.GetString("JWToken")';
+
+        function apiCall(method, url, data, callback) {
+            $.ajax({
+                url: API_BASE + url,
+                type: method,
+                headers: { 'Authorization': 'Bearer ' + token },
+                contentType: 'application/json',
+                data: data ? JSON.stringify(data) : null,
+                success: callback,
+                error: function (xhr) { alert(xhr.responseText || 'Có lỗi xảy ra'); }
+            });
+        }
+
+        function loadCourses() {
+            var query = '/api/Courses';
+            var params = [];
+            var search = $('#searchCourse').val();
+            var price = $('#filterPrice').val();
+            var sort = $('#sortDuration').val();
+
+            if (search) params.push("$filter=contains(CourseName,'" + search + "')");
+            if (price) {
+                var priceFilter = "Price lt " + price;
+                if (params.length > 0 && params[0].includes('$filter=')) {
+                    params[0] = params[0].replace('$filter=', '$filter=') + ' and ' + priceFilter;
+                } else {
+                    params.push('$filter=' + priceFilter);
+                }
+            }
+            if (sort) params.push('$orderby=Duration ' + sort);
+
+            if (params.length > 0) query += '?' + params.join('&');
+
+            apiCall('GET', query, null, function (data) {
+                var items = data.value || data;
+                var html = '';
+                if (!items || items.length === 0) {
+                    html = '<tr><td colspan="5" class="text-center py-4" style="color:var(--gray);">Không có dữ liệu</td></tr>';
+                } else {
+                    for (var i = 0; i < items.length; i++) {
+                        var c = items[i];
+                        html += '<tr>';
+                        html += '<td>' + (i + 1) + '</td>';
+                        html += '<td><strong>' + c.courseName + '</strong></td>';
+                        html += '<td>' + Number(c.price).toLocaleString('vi-VN') + 'đ</td>';
+                        html += '<td>' + c.duration + ' giờ</td>';
+                        html += '<td><div class="action-btns">';
+                        html += '<button class="btn-action" onclick="editCourse(' + c.courseId + ',\'' + c.courseName + '\',' + c.price + ',' + c.duration + ')"><i class="bi bi-pencil"></i></button>';
+                        html += '<button class="btn-action delete" onclick="deleteCourse(' + c.courseId + ')"><i class="bi bi-trash"></i></button>';
+                        html += '</div></td>';
+                        html += '</tr>';
+                    }
+                }
+                $('#courseTableBody').html(html);
+            });
+        }
+
+        function openAddCourse() {
+            $('#courseModalTitle').text('Thêm Khóa Học');
+            $('#editCourseId').val('');
+            $('#courseName').val('');
+            $('#coursePrice').val('');
+            $('#courseDuration').val('');
+            $('.form-control').removeClass('is-invalid');
+        }
+
+        function editCourse(id, name, price, duration) {
+            $('#courseModalTitle').text('Sửa Khóa Học');
+            $('#editCourseId').val(id);
+            $('#courseName').val(name);
+            $('#coursePrice').val(price);
+            $('#courseDuration').val(duration);
+            var modal = new bootstrap.Modal(document.getElementById('courseModal'));
+            modal.show();
+        }
+
+        function saveCourse() {
+            var valid = true;
+            var name = $('#courseName').val().trim();
+            var price = $('#coursePrice').val();
+            var duration = $('#courseDuration').val();
+
+            if (!name) { $('#courseName').addClass('is-invalid'); valid = false; } else { $('#courseName').removeClass('is-invalid'); }
+            if (!price) { $('#coursePrice').addClass('is-invalid'); valid = false; } else { $('#coursePrice').removeClass('is-invalid'); }
+            if (!duration) { $('#courseDuration').addClass('is-invalid'); valid = false; } else { $('#courseDuration').removeClass('is-invalid'); }
+
+            if (!valid) return;
+
+            var id = $('#editCourseId').val();
+            var obj = { courseId: id ? parseInt(id) : 0, courseName: name, price: parseFloat(price), duration: parseInt(duration) };
+
+            if (id) {
+                apiCall('PUT', '/api/Courses/' + id, obj, function () {
+                    bootstrap.Modal.getInstance(document.getElementById('courseModal')).hide();
+                    loadCourses();
+                });
+            } else {
+                apiCall('POST', '/api/Courses', obj, function () {
+                    bootstrap.Modal.getInstance(document.getElementById('courseModal')).hide();
+                    loadCourses();
+                });
+            }
+        }
+
+        function deleteCourse(id) {
+            if (confirm('Bạn có chắc muốn xóa khóa học này?')) {
+                apiCall('DELETE', '/api/Courses/' + id, null, function () {
+                    loadCourses();
+                });
+            }
+        }
+
+        $(function () {
+            loadCourses();
+
+            $('#searchCourse').on('keyup', function () { loadCourses(); });
+            $('#filterPrice').on('change', function () { loadCourses(); });
+            $('#sortDuration').on('change', function () { loadCourses(); });
+        });
+    </script>
+}

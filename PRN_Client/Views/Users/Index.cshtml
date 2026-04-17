@@ -1,0 +1,173 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Quản lý Tài khoản";
+}
+
+<div class="card-panel">
+    <div class="card-panel-header">
+        <div class="toolbar">
+            <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="text" id="searchUser" placeholder="Tìm kiếm người dùng..." />
+            </div>
+        </div>
+        <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#userModal" onclick="openAddUser()">
+            <i class="bi bi-plus-lg"></i> Thêm tài khoản
+        </button>
+    </div>
+    <div class="card-panel-body p-0">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Username</th>
+                    <th>Họ và tên</th>
+                    <th>Email</th>
+                    <th>Vai trò</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody">
+                <tr>
+                    <td colspan="7" class="text-center py-4" style="color:var(--gray);">Đang tải...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade modal-custom" id="userModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm tài khoản</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group-custom">
+                    <label>Username</label>
+                    <input type="text" class="form-control" id="uUsername" placeholder="Nhập username" />
+                </div>
+                <div class="form-group-custom">
+                    <label>Mật khẩu</label>
+                    <input type="password" class="form-control" id="uPassword" placeholder="Nhập mật khẩu" />
+                </div>
+                <div class="form-group-custom">
+                    <label>Họ và tên</label>
+                    <input type="text" class="form-control" id="uFullName" placeholder="Nhập họ tên" />
+                </div>
+                <div class="form-group-custom">
+                    <label>Email</label>
+                    <input type="email" class="form-control" id="uEmail" placeholder="Nhập email" />
+                </div>
+                <div class="form-group-custom">
+                    <label>Vai trò</label>
+                    <select class="form-select" id="uRole">
+                        <option value="Staff">Staff</option>
+                        <option value="Teacher">Teacher</option>
+                        <option value="Student">Student</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn-primary-custom" onclick="saveUser()">
+                    <i class="bi bi-check-lg"></i> Lưu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var API_BASE = 'http://localhost:5054';
+        var token = '@Context.Session.GetString("JWToken")';
+
+        function apiCall(method, url, data, callback) {
+            $.ajax({
+                url: API_BASE + url,
+                type: method,
+                headers: { 'Authorization': 'Bearer ' + token },
+                contentType: 'application/json',
+                data: data ? JSON.stringify(data) : null,
+                success: callback,
+                error: function (xhr) { alert(xhr.responseText || 'Lỗi'); }
+            });
+        }
+
+        function loadUsers() {
+            apiCall('GET', '/api/Users', null, function (data) {
+                var search = $('#searchUser').val().toLowerCase();
+                var filtered = data;
+                if (search) {
+                    filtered = data.filter(function (u) {
+                        return u.username.toLowerCase().includes(search) || u.fullName.toLowerCase().includes(search);
+                    });
+                }
+                var html = '';
+                if (!filtered || filtered.length === 0) {
+                    html = '<tr><td colspan="7" class="text-center py-4" style="color:var(--gray);">Không có dữ liệu</td></tr>';
+                } else {
+                    for (var i = 0; i < filtered.length; i++) {
+                        var u = filtered[i];
+                        var rolesHtml = '';
+                        if (u.roles) {
+                            for (var j = 0; j < u.roles.length; j++) {
+                                rolesHtml += '<span class="badge-status active" style="margin-right:4px;">' + u.roles[j] + '</span>';
+                            }
+                        }
+                        var statusClass = u.isActive ? 'paid' : 'pending';
+                        var statusText = u.isActive ? 'Hoạt động' : 'Đã khóa';
+
+                        html += '<tr>';
+                        html += '<td>' + (i + 1) + '</td>';
+                        html += '<td><strong>' + u.username + '</strong></td>';
+                        html += '<td>' + u.fullName + '</td>';
+                        html += '<td>' + (u.email || '-') + '</td>';
+                        html += '<td>' + rolesHtml + '</td>';
+                        html += '<td><span class="badge-status ' + statusClass + '">' + statusText + '</span></td>';
+                        html += '<td><div class="action-btns">';
+                        html += '<button class="btn-action" onclick="toggleStatus(' + u.userId + ')" title="Khóa/Mở khóa"><i class="bi bi-lock"></i></button>';
+                        html += '</div></td>';
+                        html += '</tr>';
+                    }
+                }
+                $('#userTableBody').html(html);
+            });
+        }
+
+        function openAddUser() {
+            $('#uUsername').val('');
+            $('#uPassword').val('');
+            $('#uFullName').val('');
+            $('#uEmail').val('');
+        }
+
+        function saveUser() {
+            var obj = {
+                username: $('#uUsername').val().trim(),
+                password: $('#uPassword').val().trim(),
+                fullName: $('#uFullName').val().trim(),
+                email: $('#uEmail').val().trim(),
+                roles: [$('#uRole').val()]
+            };
+            apiCall('POST', '/api/Users', obj, function () {
+                bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
+                loadUsers();
+            });
+        }
+
+        function toggleStatus(id) {
+            apiCall('PUT', '/api/Users/' + id + '/status', null, function () {
+                loadUsers();
+            });
+        }
+
+        $(function () {
+            loadUsers();
+            $('#searchUser').on('keyup', function () { loadUsers(); });
+        });
+    </script>
+}

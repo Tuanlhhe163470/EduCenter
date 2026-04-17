@@ -1,0 +1,76 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Đăng nhập";
+}
+
+<div class="login-page">
+    <div class="login-card">
+        <div class="logo-area">
+            <div class="logo-icon">
+                <i class="bi bi-mortarboard-fill"></i>
+            </div>
+            <h2>EduCenter</h2>
+            <p>Hệ thống quản lý trung tâm tiếng Anh</p>
+        </div>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="error-alert">
+                <i class="bi bi-exclamation-circle-fill"></i>
+                <span>@ViewBag.Error</span>
+            </div>
+        }
+
+        <form method="post" asp-action="Login" id="loginForm">
+            <div class="form-field" id="fieldUsername">
+                <label>Tên đăng nhập</label>
+                <div class="input-wrapper">
+                    <input type="text" name="username" id="inputUsername" placeholder="Nhập tên đăng nhập" />
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <div class="error-text">Vui lòng nhập tên đăng nhập</div>
+            </div>
+
+            <div class="form-field" id="fieldPassword">
+                <label>Mật khẩu</label>
+                <div class="input-wrapper">
+                    <input type="password" name="password" id="inputPassword" placeholder="Nhập mật khẩu" />
+                    <i class="bi bi-lock-fill"></i>
+                </div>
+                <div class="error-text">Vui lòng nhập mật khẩu</div>
+            </div>
+
+            <button type="submit" class="btn-login">
+                <i class="bi bi-box-arrow-in-right"></i> Đăng nhập
+            </button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function (e) {
+            var valid = true;
+            var u = document.getElementById('inputUsername');
+            var p = document.getElementById('inputPassword');
+
+            if (!u.value.trim()) {
+                document.getElementById('fieldUsername').classList.add('is-invalid');
+                valid = false;
+            } else {
+                document.getElementById('fieldUsername').classList.remove('is-invalid');
+            }
+
+            if (!p.value.trim()) {
+                document.getElementById('fieldPassword').classList.add('is-invalid');
+                valid = false;
+            } else {
+                document.getElementById('fieldPassword').classList.remove('is-invalid');
+            }
+
+            if (!valid) {
+                e.preventDefault();
+            }
+        });
+    </script>
+}

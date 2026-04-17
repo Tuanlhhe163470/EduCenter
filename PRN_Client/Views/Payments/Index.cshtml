@@ -1,0 +1,184 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Thanh toán Học phí";
+}
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card-panel">
+            <div class="card-panel-header">
+                <h5 style="font-weight:700;margin:0;">Chọn Ghi danh</h5>
+            </div>
+            <div class="card-panel-body">
+                <div class="form-group-custom">
+                    <label>Chọn Lớp học</label>
+                    <select class="form-select" id="payClassId" onchange="loadEnrollments()">
+                        <option value="">-- Chọn lớp --</option>
+                    </select>
+                </div>
+                <div class="form-group-custom">
+                    <label>Chọn Học viên (đã ghi danh)</label>
+                    <select class="form-select" id="payEnrollmentId" onchange="loadPaymentInfo()">
+                        <option value="">-- Chọn học viên --</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-panel mt-4" id="paymentInfoPanel" style="display:none;">
+            <div class="card-panel-header">
+                <h5 style="font-weight:700;margin:0;">Thông tin thanh toán</h5>
+            </div>
+            <div class="card-panel-body">
+                <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                    <span style="color:var(--gray);font-size:13px;">Khóa học</span>
+                    <strong id="payCourseName">-</strong>
+                </div>
+                <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                    <span style="color:var(--gray);font-size:13px;">Lớp</span>
+                    <strong id="payClassName">-</strong>
+                </div>
+                <div class="detail-row d-flex justify-content-between py-2 border-bottom">
+                    <span style="color:var(--gray);font-size:13px;">Trạng thái</span>
+                    <span id="payStatus" class="badge-status pending">Pending</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="payment-amount-box">
+            <div class="amount-label">Học phí cần thanh toán</div>
+            <div class="amount-value" id="payAmountDisplay">0đ</div>
+            <div style="font-size:13px;opacity:0.8;">Theo mức phí khóa học</div>
+        </div>
+
+        <div class="card-panel mt-4">
+            <div class="card-panel-header">
+                <h5 style="font-weight:700;margin:0;">Xác nhận thu tiền</h5>
+            </div>
+            <div class="card-panel-body">
+                <div class="form-group-custom">
+                    <label>Số tiền thu</label>
+                    <input type="number" class="form-control" id="payAmount" placeholder="Nhập số tiền" />
+                </div>
+                <div class="form-group-custom">
+                    <label>Phương thức</label>
+                    <select class="form-select" id="payMethod">
+                        <option value="Cash">Tiền mặt</option>
+                        <option value="BankTransfer">Chuyển khoản</option>
+                        <option value="Card">Thẻ</option>
+                    </select>
+                </div>
+                <div id="payError" class="error-alert" style="display:none;">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span id="payErrorText"></span>
+                </div>
+                <div id="paySuccess" class="error-alert" style="display:none;background:#d1fae5;border-color:#6ee7b7;color:#065f46;">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>Thanh toán thành công! Trạng thái ghi danh đã được cập nhật.</span>
+                </div>
+                <button class="btn-success-custom" onclick="submitPayment()">
+                    <i class="bi bi-credit-card-fill"></i> Xác nhận thu tiền
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var API_BASE = 'http://localhost:5054';
+        var token = '@Context.Session.GetString("JWToken")';
+        var classesData = [];
+        var enrollmentsData = [];
+
+        function apiCall(method, url, data, callback, errorCallback) {
+            $.ajax({
+                url: API_BASE + url,
+                type: method,
+                headers: { 'Authorization': 'Bearer ' + token },
+                contentType: 'application/json',
+                data: data ? JSON.stringify(data) : null,
+                success: callback,
+                error: function (xhr) { if (errorCallback) errorCallback(xhr.responseText || 'Có lỗi'); }
+            });
+        }
+
+        function loadClasses() {
+            apiCall('GET', '/api/Classes', null, function (data) {
+                classesData = data;
+                var html = '<option value="">-- Chọn lớp --</option>';
+                for (var i = 0; i < data.length; i++) {
+                    html += '<option value="' + data[i].classId + '">' + (data[i].courseName || 'Lớp ') + ' (ID: ' + data[i].classId + ')</option>';
+                }
+                $('#payClassId').html(html);
+            });
+        }
+
+        function loadEnrollments() {
+            var classId = $('#payClassId').val();
+            if (!classId) return;
+
+            apiCall('GET', '/api/Users', null, function (users) {
+                var html = '<option value="">-- Chọn học viên --</option>';
+                var students = users.filter(function (u) { return u.roles && u.roles.indexOf('Student') >= 0; });
+                for (var i = 0; i < students.length; i++) {
+                    html += '<option value="' + students[i].userId + '">' + students[i].fullName + '</option>';
+                }
+                $('#payEnrollmentId').html(html);
+            });
+        }
+
+        function loadPaymentInfo() {
+            var classId = $('#payClassId').val();
+            if (!classId) return;
+
+            var cls = classesData.find(function (c) { return c.classId == classId; });
+            if (cls) {
+                $('#payCourseName').text(cls.courseName || '-');
+                $('#payClassName').text('Lớp ID: ' + cls.classId);
+                $('#paymentInfoPanel').show();
+            }
+
+            apiCall('GET', '/api/Courses', null, function (data) {
+                var items = data.value || data;
+                if (cls) {
+                    var course = items.find(function (c) { return c.courseId == cls.courseId; });
+                    if (course) {
+                        $('#payAmountDisplay').text(Number(course.price).toLocaleString('vi-VN') + 'đ');
+                        $('#payAmount').val(course.price);
+                    }
+                }
+            });
+        }
+
+        function submitPayment() {
+            var enrollmentId = parseInt($('#payEnrollmentId').val());
+            var amount = parseFloat($('#payAmount').val());
+            var method = $('#payMethod').val();
+
+            if (!enrollmentId || !amount) {
+                $('#payErrorText').text('Vui lòng chọn đầy đủ thông tin');
+                $('#payError').show();
+                return;
+            }
+
+            $('#payError').hide();
+            $('#paySuccess').hide();
+
+            var obj = { enrollmentId: enrollmentId, amount: amount, method: method };
+            apiCall('POST', '/api/Payments', obj, function () {
+                $('#paySuccess').show();
+                $('#payStatus').removeClass('pending').addClass('paid').text('Paid');
+            }, function (err) {
+                $('#payErrorText').text(err);
+                $('#payError').show();
+            });
+        }
+
+        $(function () {
+            loadClasses();
+        });
+    </script>
+}

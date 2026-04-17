@@ -1,0 +1,205 @@
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    var username = Context.Session.GetString("Username") ?? "Admin";
+    var roles = Context.Session.GetString("Roles") ?? "";
+    var userId = Context.Session.GetString("UserId") ?? "0";
+    var accessDenied = Context.Session.GetString("AccessDenied");
+
+    bool isAdmin = roles.Contains("Admin");
+    bool isStaff = roles.Contains("Staff");
+    bool isTeacher = roles.Contains("Teacher");
+    bool isStudent = roles.Contains("Student");
+
+    bool canManageCourses = isAdmin || isStaff;
+    bool canManageClasses = isAdmin || isStaff;
+    bool canManageEnrollments = isAdmin || isStaff;
+    bool canManagePayments = isAdmin || isStaff;
+    bool canManageAttendance = isAdmin || isTeacher;
+    bool canManageUsers = isAdmin;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - EduCenter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="~/css/site.css" rel="stylesheet" asp-append-version="true" />
+</head>
+<body>
+    <div class="dashboard-wrapper">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">
+                    <i class="bi bi-mortarboard-fill"></i>
+                </div>
+                <div class="brand-text">
+                    <h4>EduCenter</h4>
+                    <span>Management</span>
+                </div>
+            </div>
+            <div class="sidebar-menu">
+                <div class="menu-label">Tổng quan</div>
+                <div class="nav-item">
+                    <a href="@Url.Action("Index", "Home")" class="nav-link @(currentController == "Home" ? "active" : "")">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+
+                @if (canManageCourses || canManageClasses)
+                {
+                    <div class="menu-label">Quản lý đào tạo</div>
+                }
+                @if (canManageCourses)
+                {
+                    <div class="nav-item">
+                        <a href="@Url.Action("Index", "Courses")" class="nav-link @(currentController == "Courses" ? "active" : "")">
+                            <i class="bi bi-book-fill"></i>
+                            <span>Khóa học</span>
+                        </a>
+                    </div>
+                }
+                @if (canManageClasses)
+                {
+                    <div class="nav-item">
+                        <a href="@Url.Action("Index", "Classes")" class="nav-link @(currentController == "Classes" ? "active" : "")">
+                            <i class="bi bi-door-open-fill"></i>
+                            <span>Lớp học</span>
+                        </a>
+                    </div>
+                }
+
+                <div class="nav-item">
+                    <a href="@Url.Action("Index", "Schedules")" class="nav-link @(currentController == "Schedules" ? "active" : "")">
+                        <i class="bi bi-calendar-week-fill"></i>
+                        <span>Thời khóa biểu</span>
+                    </a>
+                </div>
+
+                @if (canManageEnrollments || canManagePayments)
+                {
+                    <div class="menu-label">Ghi danh & Thu ngân</div>
+                }
+                @if (canManageEnrollments)
+                {
+                    <div class="nav-item">
+                        <a href="@Url.Action("Index", "Enrollments")" class="nav-link @(currentController == "Enrollments" ? "active" : "")">
+                            <i class="bi bi-person-plus-fill"></i>
+                            <span>Ghi danh</span>
+                        </a>
+                    </div>
+                }
+                @if (canManagePayments)
+                {
+                    <div class="nav-item">
+                        <a href="@Url.Action("Index", "Payments")" class="nav-link @(currentController == "Payments" ? "active" : "")">
+                            <i class="bi bi-credit-card-fill"></i>
+                            <span>Thanh toán</span>
+                        </a>
+                    </div>
+                }
+
+                @if (canManageAttendance || canManageUsers)
+                {
+                    <div class="menu-label">Giảng dạy</div>
+                }
+                @if (canManageAttendance)
+                {
+                    <div class="nav-item">
+                        <a href="@Url.Action("Index", "Attendance")" class="nav-link @(currentController == "Attendance" ? "active" : "")">
+                            <i class="bi bi-clipboard-check-fill"></i>
+                            <span>Điểm danh</span>
+                        </a>
+                    </div>
+                }
+                @if (canManageUsers)
+                {
+                    <div class="nav-item">
+                        <a href="@Url.Action("Index", "Users")" class="nav-link @(currentController == "Users" ? "active" : "")">
+                            <i class="bi bi-people-fill"></i>
+                            <span>Quản lý tài khoản</span>
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <div class="main-content">
+            <div class="topbar">
+                <div class="topbar-left">
+                    <button class="toggle-sidebar" id="toggleSidebar">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h1 class="page-title">@ViewData["Title"]</h1>
+                </div>
+                <div class="topbar-right">
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            @(username.Length > 0 ? username[0].ToString().ToUpper() : "U")
+                        </div>
+                        <div class="user-details">
+                            <div class="user-name">@username</div>
+                            <div class="user-role">@roles</div>
+                        </div>
+                    </div>
+                    <a href="@Url.Action("Logout", "Auth")" class="btn-logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                        Đăng xuất
+                    </a>
+                </div>
+            </div>
+            <div class="page-body">
+                @if (!string.IsNullOrEmpty(accessDenied))
+                {
+                    Context.Session.Remove("AccessDenied");
+                    <div class="toast-notification" id="accessDeniedToast">
+                        <i class="bi bi-shield-exclamation"></i>
+                        <span>@accessDenied</span>
+                    </div>
+                }
+                @RenderBody()
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        var toggleBtn = document.getElementById('toggleSidebar');
+        var sidebar = document.getElementById('sidebar');
+        var overlay = document.getElementById('sidebarOverlay');
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function () {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+            });
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', function () {
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+            });
+        }
+
+        var toast = document.getElementById('accessDeniedToast');
+        if (toast) {
+            setTimeout(function () {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(function () { toast.remove(); }, 400);
+            }, 4000);
+        }
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,185 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Ghi danh Học viên";
+}
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card-panel">
+            <div class="card-panel-header">
+                <h5 style="font-weight:700;margin:0;">Ghi danh học viên vào lớp</h5>
+            </div>
+            <div class="card-panel-body">
+                <div class="form-group-custom">
+                    <label>Chọn Học viên</label>
+                    <select class="form-select" id="enrollStudentId">
+                        <option value="">-- Tìm và chọn học viên --</option>
+                    </select>
+                    <div class="invalid-feedback">Vui lòng chọn học viên</div>
+                </div>
+                <div class="form-group-custom">
+                    <label>Chọn Lớp học</label>
+                    <select class="form-select" id="enrollClassId">
+                        <option value="">-- Chọn lớp học --</option>
+                    </select>
+                    <div class="invalid-feedback">Vui lòng chọn lớp học</div>
+                </div>
+                <div class="form-group-custom">
+                    <label>Ngày ghi danh</label>
+                    <input type="date" class="form-control" id="enrollDate" />
+                </div>
+                <div id="enrollError" class="error-alert" style="display:none;">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span id="enrollErrorText"></span>
+                </div>
+                <div id="enrollSuccess" class="error-alert" style="display:none;background:#d1fae5;border-color:#6ee7b7;color:#065f46;">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>Ghi danh thành công!</span>
+                </div>
+                <button class="btn-primary-custom" onclick="submitEnrollment()">
+                    <i class="bi bi-person-plus-fill"></i> Ghi danh
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card-panel">
+            <div class="card-panel-header">
+                <h5 style="font-weight:700;margin:0;">Đăng ký Học viên mới</h5>
+            </div>
+            <div class="card-panel-body">
+                <div class="form-group-custom">
+                    <label>Tên đăng nhập</label>
+                    <input type="text" class="form-control" id="newUsername" placeholder="Nhập username" />
+                    <div class="invalid-feedback">Vui lòng nhập username</div>
+                </div>
+                <div class="form-group-custom">
+                    <label>Mật khẩu</label>
+                    <input type="password" class="form-control" id="newPassword" placeholder="Nhập mật khẩu" />
+                    <div class="invalid-feedback">Vui lòng nhập mật khẩu</div>
+                </div>
+                <div class="form-group-custom">
+                    <label>Họ và tên</label>
+                    <input type="text" class="form-control" id="newFullName" placeholder="Nhập họ tên" />
+                    <div class="invalid-feedback">Vui lòng nhập họ tên</div>
+                </div>
+                <div class="form-group-custom">
+                    <label>Email</label>
+                    <input type="email" class="form-control" id="newEmail" placeholder="Nhập email" />
+                </div>
+                <div id="registerError" class="error-alert" style="display:none;">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span id="registerErrorText"></span>
+                </div>
+                <div id="registerSuccess" class="error-alert" style="display:none;background:#d1fae5;border-color:#6ee7b7;color:#065f46;">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>Đăng ký học viên thành công!</span>
+                </div>
+                <button class="btn-success-custom" onclick="registerStudent()">
+                    <i class="bi bi-person-add"></i> Đăng ký
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var API_BASE = 'http://localhost:5054';
+        var token = '@Context.Session.GetString("JWToken")';
+
+        function apiCall(method, url, data, callback, errorCallback) {
+            $.ajax({
+                url: API_BASE + url,
+                type: method,
+                headers: { 'Authorization': 'Bearer ' + token },
+                contentType: 'application/json',
+                data: data ? JSON.stringify(data) : null,
+                success: callback,
+                error: function (xhr) {
+                    if (errorCallback) errorCallback(xhr.responseText || 'Có lỗi xảy ra');
+                }
+            });
+        }
+
+        function loadDropdowns() {
+            apiCall('GET', '/api/Users', null, function (data) {
+                var html = '<option value="">-- Chọn học viên --</option>';
+                for (var i = 0; i < data.length; i++) {
+                    if (data[i].roles && data[i].roles.indexOf('Student') >= 0) {
+                        html += '<option value="' + data[i].userId + '">' + data[i].fullName + ' (' + data[i].username + ')</option>';
+                    }
+                }
+                $('#enrollStudentId').html(html);
+            });
+
+            apiCall('GET', '/api/Classes', null, function (data) {
+                var html = '<option value="">-- Chọn lớp học --</option>';
+                for (var i = 0; i < data.length; i++) {
+                    html += '<option value="' + data[i].classId + '">' + (data[i].courseName || 'Lớp ' + data[i].classId) + ' - GV: ' + (data[i].teacherName || 'N/A') + '</option>';
+                }
+                $('#enrollClassId').html(html);
+            });
+        }
+
+        function submitEnrollment() {
+            var valid = true;
+            var studentId = $('#enrollStudentId').val();
+            var classId = $('#enrollClassId').val();
+
+            if (!studentId) { $('#enrollStudentId').addClass('is-invalid'); valid = false; } else { $('#enrollStudentId').removeClass('is-invalid'); }
+            if (!classId) { $('#enrollClassId').addClass('is-invalid'); valid = false; } else { $('#enrollClassId').removeClass('is-invalid'); }
+
+            if (!valid) return;
+
+            $('#enrollError').hide();
+            $('#enrollSuccess').hide();
+
+            var obj = { studentId: parseInt(studentId), classId: parseInt(classId) };
+            apiCall('POST', '/api/Enrollments', obj, function () {
+                $('#enrollSuccess').show();
+                setTimeout(function () { $('#enrollSuccess').hide(); }, 3000);
+            }, function (err) {
+                $('#enrollErrorText').text(err);
+                $('#enrollError').show();
+            });
+        }
+
+        function registerStudent() {
+            var valid = true;
+            var username = $('#newUsername').val().trim();
+            var password = $('#newPassword').val().trim();
+            var fullName = $('#newFullName').val().trim();
+            var email = $('#newEmail').val().trim();
+
+            if (!username) { $('#newUsername').addClass('is-invalid'); valid = false; } else { $('#newUsername').removeClass('is-invalid'); }
+            if (!password) { $('#newPassword').addClass('is-invalid'); valid = false; } else { $('#newPassword').removeClass('is-invalid'); }
+            if (!fullName) { $('#newFullName').addClass('is-invalid'); valid = false; } else { $('#newFullName').removeClass('is-invalid'); }
+
+            if (!valid) return;
+
+            $('#registerError').hide();
+            $('#registerSuccess').hide();
+
+            var obj = { username: username, password: password, fullName: fullName, email: email, roles: ['Student'] };
+            apiCall('POST', '/api/Enrollments/register-student', obj, function () {
+                $('#registerSuccess').show();
+                loadDropdowns();
+                $('#newUsername').val('');
+                $('#newPassword').val('');
+                $('#newFullName').val('');
+                $('#newEmail').val('');
+                setTimeout(function () { $('#registerSuccess').hide(); }, 3000);
+            }, function (err) {
+                $('#registerErrorText').text(err);
+                $('#registerError').show();
+            });
+        }
+
+        $(function () {
+            var today = new Date().toISOString().split('T')[0];
+            $('#enrollDate').val(today);
+            loadDropdowns();
+        });
+    </script>
+}

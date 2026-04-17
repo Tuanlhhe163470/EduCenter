@@ -1,0 +1,114 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="stat-cards">
+    <div class="stat-card">
+        <div class="stat-icon purple">
+            <i class="bi bi-book-fill"></i>
+        </div>
+        <div class="stat-info">
+            <div class="stat-number" id="statCourses">0</div>
+            <div class="stat-label">Khóa học</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon blue">
+            <i class="bi bi-door-open-fill"></i>
+        </div>
+        <div class="stat-info">
+            <div class="stat-number" id="statClasses">0</div>
+            <div class="stat-label">Lớp học</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green">
+            <i class="bi bi-people-fill"></i>
+        </div>
+        <div class="stat-info">
+            <div class="stat-number" id="statUsers">0</div>
+            <div class="stat-label">Người dùng</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange">
+            <i class="bi bi-credit-card-fill"></i>
+        </div>
+        <div class="stat-info">
+            <div class="stat-number" id="statPayments">0</div>
+            <div class="stat-label">Thanh toán</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card-panel">
+            <div class="card-panel-header">
+                <h5 style="font-weight:700;margin:0;">Ghi danh gần đây</h5>
+            </div>
+            <div class="card-panel-body p-0">
+                <table class="data-table" id="recentEnrollmentsTable">
+                    <thead>
+                        <tr>
+                            <th>Học viên</th>
+                            <th>Lớp</th>
+                            <th>Ngày ghi danh</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="4" class="text-center py-4" style="color:var(--gray);">Đang tải dữ liệu...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card-panel">
+            <div class="card-panel-header">
+                <h5 style="font-weight:700;margin:0;">Thông tin nhanh</h5>
+            </div>
+            <div class="card-panel-body">
+                <div style="text-align:center;padding:24px 0;color:var(--gray);">
+                    <i class="bi bi-bar-chart-line-fill" style="font-size:48px;color:var(--primary-light);"></i>
+                    <p style="margin-top:12px;">Chào mừng bạn đến với<br><strong>EduCenter Management</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var API_BASE = 'http://localhost:5054';
+        var token = '@Context.Session.GetString("JWToken")';
+
+        function apiGet(url, callback) {
+            $.ajax({
+                url: API_BASE + url,
+                type: 'GET',
+                headers: { 'Authorization': 'Bearer ' + token },
+                success: callback,
+                error: function () {}
+            });
+        }
+
+        $(function () {
+            apiGet('/api/Courses', function (data) {
+                $('#statCourses').text(data.length || 0);
+            });
+
+            apiGet('/api/Classes', function (data) {
+                $('#statClasses').text(data.length || 0);
+            });
+
+            apiGet('/api/Users', function (data) {
+                $('#statUsers').text(data.length || 0);
+            });
+        });
+    </script>
+}

@@ -1,0 +1,209 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Quản lý Lớp học";
+}
+
+<div class="card-panel">
+    <div class="card-panel-header">
+        <div class="toolbar">
+            <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="text" id="searchClass" placeholder="Tìm kiếm lớp học..." />
+            </div>
+        </div>
+        <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#classModal" onclick="openAddClass()">
+            <i class="bi bi-plus-lg"></i> Mở Lớp Mới
+        </button>
+    </div>
+    <div class="card-panel-body p-0">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Khóa học</th>
+                    <th>Giảng viên</th>
+                    <th>Sĩ số tối đa</th>
+                    <th>Ngày khai giảng</th>
+                    <th>Ngày kết thúc</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody id="classTableBody">
+                <tr>
+                    <td colspan="7" class="text-center py-4" style="color:var(--gray);">Đang tải...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade modal-custom" id="classModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mở Lớp Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group-custom">
+                    <label>Khóa học</label>
+                    <select class="form-select" id="classCourseId">
+                        <option value="">-- Chọn khóa học --</option>
+                    </select>
+                </div>
+                <div class="form-group-custom">
+                    <label>Giảng viên</label>
+                    <select class="form-select" id="classTeacherId">
+                        <option value="">-- Chọn giảng viên --</option>
+                    </select>
+                </div>
+                <div class="form-group-custom">
+                    <label>Sĩ số tối đa</label>
+                    <input type="number" class="form-control" id="classMaxStudents" value="20" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn-primary-custom" onclick="saveClass()">
+                    <i class="bi bi-check-lg"></i> Lưu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade modal-custom" id="scheduleViewModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Lịch học lớp <span id="scheduleClassName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="scheduleViewBody">
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var API_BASE = 'http://localhost:5054';
+        var token = '@Context.Session.GetString("JWToken")';
+
+        function apiCall(method, url, data, callback) {
+            $.ajax({
+                url: API_BASE + url,
+                type: method,
+                headers: { 'Authorization': 'Bearer ' + token },
+                contentType: 'application/json',
+                data: data ? JSON.stringify(data) : null,
+                success: callback,
+                error: function (xhr) { alert(xhr.responseText || 'Có lỗi xảy ra'); }
+            });
+        }
+
+        var dayNames = ['', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+
+        function loadClasses() {
+            apiCall('GET', '/api/Classes', null, function (data) {
+                var search = $('#searchClass').val().toLowerCase();
+                var filtered = data;
+                if (search) {
+                    filtered = data.filter(function (c) {
+                        return (c.courseName || '').toLowerCase().includes(search) || (c.teacherName || '').toLowerCase().includes(search);
+                    });
+                }
+                var html = '';
+                if (!filtered || filtered.length === 0) {
+                    html = '<tr><td colspan="7" class="text-center py-4" style="color:var(--gray);">Không có dữ liệu</td></tr>';
+                } else {
+                    for (var i = 0; i < filtered.length; i++) {
+                        var c = filtered[i];
+                        html += '<tr>';
+                        html += '<td>' + (i + 1) + '</td>';
+                        html += '<td><strong>' + (c.courseName || 'N/A') + '</strong></td>';
+                        html += '<td>' + (c.teacherName || 'N/A') + '</td>';
+                        html += '<td>' + (c.maxStudents || 20) + '</td>';
+                        html += '<td>' + (c.startDate || '-') + '</td>';
+                        html += '<td>' + (c.endDate || '-') + '</td>';
+                        html += '<td><div class="action-btns">';
+                        html += '<button class="btn-action" onclick="viewSchedule(' + c.classId + ',\'' + (c.courseName || '') + '\')"><i class="bi bi-calendar-week"></i></button>';
+                        html += '<button class="btn-action delete" onclick="deleteClass(' + c.classId + ')"><i class="bi bi-trash"></i></button>';
+                        html += '</div></td>';
+                        html += '</tr>';
+                    }
+                }
+                $('#classTableBody').html(html);
+            });
+        }
+
+        function openAddClass() {
+            apiCall('GET', '/api/Courses', null, function (data) {
+                var items = data.value || data;
+                var html = '<option value="">-- Chọn khóa học --</option>';
+                for (var i = 0; i < items.length; i++) {
+                    html += '<option value="' + items[i].courseId + '">' + items[i].courseName + '</option>';
+                }
+                $('#classCourseId').html(html);
+            });
+
+            apiCall('GET', '/api/Users', null, function (data) {
+                var html = '<option value="">-- Chọn giảng viên --</option>';
+                for (var i = 0; i < data.length; i++) {
+                    if (data[i].roles && data[i].roles.indexOf('Teacher') >= 0) {
+                        html += '<option value="' + data[i].userId + '">' + data[i].fullName + '</option>';
+                    }
+                }
+                $('#classTeacherId').html(html);
+            });
+        }
+
+        function saveClass() {
+            var obj = {
+                courseId: parseInt($('#classCourseId').val()),
+                teacherId: parseInt($('#classTeacherId').val()),
+                maxStudents: parseInt($('#classMaxStudents').val()) || 20
+            };
+            apiCall('POST', '/api/Classes', obj, function () {
+                bootstrap.Modal.getInstance(document.getElementById('classModal')).hide();
+                loadClasses();
+            });
+        }
+
+        function viewSchedule(classId, className) {
+            $('#scheduleClassName').text(className);
+            apiCall('GET', '/api/Teacher/classes/0', null, function (data) {
+                var found = null;
+                for (var i = 0; i < data.length; i++) {
+                    if (data[i].classId === classId) {
+                        found = data[i];
+                        break;
+                    }
+                }
+                var html = '<p style="color:var(--gray);">Chưa có lịch học</p>';
+                if (found && found.schedules && found.schedules.length > 0) {
+                    html = '<table class="data-table"><thead><tr><th>Ngày</th><th>Giờ bắt đầu</th><th>Giờ kết thúc</th><th>Phòng</th></tr></thead><tbody>';
+                    for (var i = 0; i < found.schedules.length; i++) {
+                        var s = found.schedules[i];
+                        html += '<tr><td>' + (dayNames[s.dayOfWeek] || s.dayOfWeek) + '</td><td>' + s.startTime + '</td><td>' + s.endTime + '</td><td>' + (s.room || '-') + '</td></tr>';
+                    }
+                    html += '</tbody></table>';
+                }
+                $('#scheduleViewBody').html(html);
+                var modal = new bootstrap.Modal(document.getElementById('scheduleViewModal'));
+                modal.show();
+            });
+        }
+
+        function deleteClass(id) {
+            if (confirm('Bạn có chắc muốn xóa lớp này?')) {
+                apiCall('DELETE', '/api/Classes/' + id, null, function () { loadClasses(); });
+            }
+        }
+
+        $(function () {
+            loadClasses();
+            $('#searchClass').on('keyup', function () { loadClasses(); });
+        });
+    </script>
+}

@@ -1,0 +1,213 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Thời khóa biểu";
+}
+
+<div class="card-panel mb-4">
+    <div class="card-panel-header">
+        <div class="toolbar">
+            <div class="form-group-custom" style="margin:0;">
+                <select class="form-select" id="scheduleClassId" onchange="loadSchedules()" style="min-width:250px;">
+                    <option value="">-- Chọn lớp học --</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#addScheduleModal">
+            <i class="bi bi-plus-lg"></i> Thêm lịch học
+        </button>
+    </div>
+    <div class="card-panel-body p-0" style="overflow-x:auto;">
+        <table class="timetable" id="timetableGrid">
+            <thead>
+                <tr>
+                    <th style="width:100px;">Ca học</th>
+                    <th>Thứ 2</th>
+                    <th>Thứ 3</th>
+                    <th>Thứ 4</th>
+                    <th>Thứ 5</th>
+                    <th>Thứ 6</th>
+                    <th>Thứ 7</th>
+                    <th>Chủ nhật</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="font-weight:600;background:var(--gray-bg);">Sáng</td>
+                    <td id="cell-1-morning"></td>
+                    <td id="cell-2-morning"></td>
+                    <td id="cell-3-morning"></td>
+                    <td id="cell-4-morning"></td>
+                    <td id="cell-5-morning"></td>
+                    <td id="cell-6-morning"></td>
+                    <td id="cell-7-morning"></td>
+                </tr>
+                <tr>
+                    <td style="font-weight:600;background:var(--gray-bg);">Chiều</td>
+                    <td id="cell-1-afternoon"></td>
+                    <td id="cell-2-afternoon"></td>
+                    <td id="cell-3-afternoon"></td>
+                    <td id="cell-4-afternoon"></td>
+                    <td id="cell-5-afternoon"></td>
+                    <td id="cell-6-afternoon"></td>
+                    <td id="cell-7-afternoon"></td>
+                </tr>
+                <tr>
+                    <td style="font-weight:600;background:var(--gray-bg);">Tối</td>
+                    <td id="cell-1-evening"></td>
+                    <td id="cell-2-evening"></td>
+                    <td id="cell-3-evening"></td>
+                    <td id="cell-4-evening"></td>
+                    <td id="cell-5-evening"></td>
+                    <td id="cell-6-evening"></td>
+                    <td id="cell-7-evening"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade modal-custom" id="addScheduleModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm lịch học</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group-custom">
+                    <label>Lớp học</label>
+                    <select class="form-select" id="addSchedClassId">
+                        <option value="">-- Chọn lớp --</option>
+                    </select>
+                </div>
+                <div class="form-group-custom">
+                    <label>Ngày trong tuần</label>
+                    <select class="form-select" id="addSchedDay">
+                        <option value="1">Thứ 2</option>
+                        <option value="2">Thứ 3</option>
+                        <option value="3">Thứ 4</option>
+                        <option value="4">Thứ 5</option>
+                        <option value="5">Thứ 6</option>
+                        <option value="6">Thứ 7</option>
+                        <option value="7">Chủ nhật</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="form-group-custom">
+                            <label>Giờ bắt đầu</label>
+                            <input type="time" class="form-control" id="addSchedStart" value="08:00" />
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-group-custom">
+                            <label>Giờ kết thúc</label>
+                            <input type="time" class="form-control" id="addSchedEnd" value="10:00" />
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group-custom">
+                    <label>Phòng học</label>
+                    <input type="text" class="form-control" id="addSchedRoom" placeholder="VD: A101" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn-primary-custom" onclick="saveSchedule()">
+                    <i class="bi bi-check-lg"></i> Lưu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var API_BASE = 'http://localhost:5054';
+        var token = '@Context.Session.GetString("JWToken")';
+
+        function apiCall(method, url, data, callback) {
+            $.ajax({
+                url: API_BASE + url,
+                type: method,
+                headers: { 'Authorization': 'Bearer ' + token },
+                contentType: 'application/json',
+                data: data ? JSON.stringify(data) : null,
+                success: callback,
+                error: function (xhr) { alert(xhr.responseText || 'Lỗi'); }
+            });
+        }
+
+        function loadClassDropdowns() {
+            apiCall('GET', '/api/Classes', null, function (data) {
+                var html1 = '<option value="">-- Chọn lớp học --</option>';
+                var html2 = '<option value="">-- Chọn lớp --</option>';
+                for (var i = 0; i < data.length; i++) {
+                    var opt = '<option value="' + data[i].classId + '">' + (data[i].courseName || 'Lớp ' + data[i].classId) + '</option>';
+                    html1 += opt;
+                    html2 += opt;
+                }
+                $('#scheduleClassId').html(html1);
+                $('#addSchedClassId').html(html2);
+            });
+        }
+
+        function getTimePeriod(timeStr) {
+            if (!timeStr) return 'morning';
+            var hour = parseInt(timeStr.split(':')[0]);
+            if (hour < 12) return 'morning';
+            if (hour < 17) return 'afternoon';
+            return 'evening';
+        }
+
+        function loadSchedules() {
+            for (var d = 1; d <= 7; d++) {
+                $('#cell-' + d + '-morning').html('');
+                $('#cell-' + d + '-afternoon').html('');
+                $('#cell-' + d + '-evening').html('');
+            }
+
+            var classId = $('#scheduleClassId').val();
+            if (!classId) return;
+
+            apiCall('GET', '/api/Teacher/classes/0', null, function (data) {
+                for (var i = 0; i < data.length; i++) {
+                    if (data[i].classId == classId && data[i].schedules) {
+                        for (var j = 0; j < data[i].schedules.length; j++) {
+                            var s = data[i].schedules[j];
+                            var day = s.dayOfWeek;
+                            var period = getTimePeriod(s.startTime);
+                            var cellId = '#cell-' + day + '-' + period;
+                            var html = '<div class="schedule-slot">';
+                            html += '<div class="slot-course">' + (data[i].course ? data[i].course.courseName : '') + '</div>';
+                            html += '<div class="slot-time"><i class="bi bi-clock"></i> ' + s.startTime + ' - ' + s.endTime + '</div>';
+                            html += '<div class="slot-room"><i class="bi bi-geo-alt"></i> ' + (s.room || '-') + '</div>';
+                            html += '</div>';
+                            $(cellId).append(html);
+                        }
+                    }
+                }
+            });
+        }
+
+        function saveSchedule() {
+            var obj = {
+                scheduleId: 0,
+                classId: parseInt($('#addSchedClassId').val()),
+                dayOfWeek: parseInt($('#addSchedDay').val()),
+                startTime: $('#addSchedStart').val(),
+                endTime: $('#addSchedEnd').val(),
+                room: $('#addSchedRoom').val()
+            };
+            apiCall('POST', '/api/Schedules', obj, function () {
+                bootstrap.Modal.getInstance(document.getElementById('addScheduleModal')).hide();
+                $('#scheduleClassId').val(obj.classId);
+                loadSchedules();
+            });
+        }
+
+        $(function () {
+            loadClassDropdowns();
+        });
+    </script>
+}
