@@ -34,10 +34,16 @@ namespace PRN_Client.Controllers
                 var responseContent = await response.Content.ReadAsStringAsync();
                 var result = JsonSerializer.Deserialize<LoginResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
+                var rolesStr = string.Join(", ", result?.Roles ?? new List<string>());
                 HttpContext.Session.SetString("JWToken", result?.Token ?? "");
-                HttpContext.Session.SetString("Roles", string.Join(", ", result?.Roles ?? new List<string>()));
+                HttpContext.Session.SetString("Roles", rolesStr);
                 HttpContext.Session.SetString("Username", username);
                 HttpContext.Session.SetString("UserId", result?.UserId.ToString() ?? "0");
+
+                if (!rolesStr.Contains("Admin") && !rolesStr.Contains("Staff") && (rolesStr.Contains("Teacher") || rolesStr.Contains("Student")))
+                {
+                    return RedirectToAction("Index", "MySchedule");
+                }
 
                 return RedirectToAction("Index", "Home");
             }

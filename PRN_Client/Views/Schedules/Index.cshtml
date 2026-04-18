@@ -33,33 +33,33 @@
             <tbody>
                 <tr>
                     <td style="font-weight:600;background:var(--gray-bg);">Sáng</td>
-                    <td id="cell-1-morning"></td>
                     <td id="cell-2-morning"></td>
                     <td id="cell-3-morning"></td>
                     <td id="cell-4-morning"></td>
                     <td id="cell-5-morning"></td>
                     <td id="cell-6-morning"></td>
                     <td id="cell-7-morning"></td>
+                    <td id="cell-8-morning"></td>
                 </tr>
                 <tr>
                     <td style="font-weight:600;background:var(--gray-bg);">Chiều</td>
-                    <td id="cell-1-afternoon"></td>
                     <td id="cell-2-afternoon"></td>
                     <td id="cell-3-afternoon"></td>
                     <td id="cell-4-afternoon"></td>
                     <td id="cell-5-afternoon"></td>
                     <td id="cell-6-afternoon"></td>
                     <td id="cell-7-afternoon"></td>
+                    <td id="cell-8-afternoon"></td>
                 </tr>
                 <tr>
                     <td style="font-weight:600;background:var(--gray-bg);">Tối</td>
-                    <td id="cell-1-evening"></td>
                     <td id="cell-2-evening"></td>
                     <td id="cell-3-evening"></td>
                     <td id="cell-4-evening"></td>
                     <td id="cell-5-evening"></td>
                     <td id="cell-6-evening"></td>
                     <td id="cell-7-evening"></td>
+                    <td id="cell-8-evening"></td>
                 </tr>
             </tbody>
         </table>
@@ -83,13 +83,13 @@
                 <div class="form-group-custom">
                     <label>Ngày trong tuần</label>
                     <select class="form-select" id="addSchedDay">
-                        <option value="1">Thứ 2</option>
-                        <option value="2">Thứ 3</option>
-                        <option value="3">Thứ 4</option>
-                        <option value="4">Thứ 5</option>
-                        <option value="5">Thứ 6</option>
-                        <option value="6">Thứ 7</option>
-                        <option value="7">Chủ nhật</option>
+                        <option value="2">Thứ 2</option>
+                        <option value="3">Thứ 3</option>
+                        <option value="4">Thứ 4</option>
+                        <option value="5">Thứ 5</option>
+                        <option value="6">Thứ 6</option>
+                        <option value="7">Thứ 7</option>
+                        <option value="8">Chủ nhật</option>
                     </select>
                 </div>
                 <div class="row">
@@ -161,7 +161,7 @@
         }
 
         function loadSchedules() {
-            for (var d = 1; d <= 7; d++) {
+            for (var d = 2; d <= 8; d++) {
                 $('#cell-' + d + '-morning').html('');
                 $('#cell-' + d + '-afternoon').html('');
                 $('#cell-' + d + '-evening').html('');
@@ -170,22 +170,18 @@
             var classId = $('#scheduleClassId').val();
             if (!classId) return;
 
-            apiCall('GET', '/api/Teacher/classes/0', null, function (data) {
+            apiCall('GET', '/api/Schedules/class/' + classId, null, function (data) {
                 for (var i = 0; i < data.length; i++) {
-                    if (data[i].classId == classId && data[i].schedules) {
-                        for (var j = 0; j < data[i].schedules.length; j++) {
-                            var s = data[i].schedules[j];
-                            var day = s.dayOfWeek;
-                            var period = getTimePeriod(s.startTime);
-                            var cellId = '#cell-' + day + '-' + period;
-                            var html = '<div class="schedule-slot">';
-                            html += '<div class="slot-course">' + (data[i].course ? data[i].course.courseName : '') + '</div>';
-                            html += '<div class="slot-time"><i class="bi bi-clock"></i> ' + s.startTime + ' - ' + s.endTime + '</div>';
-                            html += '<div class="slot-room"><i class="bi bi-geo-alt"></i> ' + (s.room || '-') + '</div>';
-                            html += '</div>';
-                            $(cellId).append(html);
-                        }
-                    }
+                    var s = data[i];
+                    var day = s.dayOfWeek;
+                    var period = getTimePeriod(s.startTime);
+                    var cellId = '#cell-' + day + '-' + period;
+                    var html = '<div class="schedule-slot">';
+                    html += '<div class="slot-course">' + (s.courseName || '') + '</div>';
+                    html += '<div class="slot-time"><i class="bi bi-clock"></i> ' + s.startTime + ' - ' + s.endTime + '</div>';
+                    html += '<div class="slot-room"><i class="bi bi-geo-alt"></i> ' + (s.room || '-') + '</div>';
+                    html += '</div>';
+                    $(cellId).append(html);
                 }
             });
         }
@@ -193,8 +189,8 @@
         function saveSchedule() {
             var obj = {
                 scheduleId: 0,
-                classId: parseInt($('#addSchedClassId').val()),
-                dayOfWeek: parseInt($('#addSchedDay').val()),
+                classId: parseInt($('#addSchedClassId').val()) || 0,
+                dayOfWeek: parseInt($('#addSchedDay').val()) || 0,
                 startTime: $('#addSchedStart').val(),
                 endTime: $('#addSchedEnd').val(),
                 room: $('#addSchedRoom').val()

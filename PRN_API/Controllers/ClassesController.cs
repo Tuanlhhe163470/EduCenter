@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PRN_API.DTOs;
 using PRN_API.Models;
+using System.Security.Claims;
 
 namespace PRN_API.Controllers
 {
@@ -35,6 +36,38 @@ namespace PRN_API.Controllers
                 }).ToListAsync();
 
             return Ok(classes);
+        }
+
+        [HttpGet("{classId}/students")]
+        [Authorize(Roles = "Admin,Teacher,Staff")]
+        public async Task<IActionResult> GetClassStudents(int classId)
+        {
+            var targetClass = await _context.Classes.FindAsync(classId);
+            if (targetClass == null) return NotFound();
+
+            if (User.IsInRole("Teacher") && !User.IsInRole("Admin"))
+            {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(userIdStr, out int teacherId))
+                {
+                    if (targetClass.TeacherId != teacherId) return Forbid();
+                }
+            }
+
+            var students = await _context.Enrollments
+                .Where(e => e.ClassId == classId)
+                .Include(e => e.Student)
+                .Select(e => new
+                {
+                    e.EnrollmentId,
+                    e.StudentId,
+                    e.Student!.FullName,
+                    e.Student.Email,
+                    e.Status
+                })
+                .ToListAsync();
+
+            return Ok(students);
         }
 
         [HttpPost]

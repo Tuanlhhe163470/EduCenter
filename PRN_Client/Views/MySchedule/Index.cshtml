@@ -1,0 +1,146 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Lịch của tôi";
+}
+
+<div class="card-panel mb-4">
+    <div class="card-panel-header">
+        <h5 style="font-weight:700;margin:0;">
+            <i class="bi bi-calendar-week text-primary"></i> Thời khóa biểu cá nhân
+        </h5>
+        <span class="badge bg-primary rounded-pill px-3 py-2" id="roleBadge"></span>
+    </div>
+    <div class="card-panel-body p-0" style="overflow-x:auto;">
+        <table class="timetable" id="timetableGrid">
+            <thead>
+                <tr>
+                    <th style="width:100px;">Ca học</th>
+                    <th>Thứ 2</th>
+                    <th>Thứ 3</th>
+                    <th>Thứ 4</th>
+                    <th>Thứ 5</th>
+                    <th>Thứ 6</th>
+                    <th>Thứ 7</th>
+                    <th>Chủ nhật</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="font-weight:600;background:var(--gray-bg);">Sáng</td>
+                    <td id="cell-2-morning"></td>
+                    <td id="cell-3-morning"></td>
+                    <td id="cell-4-morning"></td>
+                    <td id="cell-5-morning"></td>
+                    <td id="cell-6-morning"></td>
+                    <td id="cell-7-morning"></td>
+                    <td id="cell-8-morning"></td>
+                </tr>
+                <tr>
+                    <td style="font-weight:600;background:var(--gray-bg);">Chiều</td>
+                    <td id="cell-2-afternoon"></td>
+                    <td id="cell-3-afternoon"></td>
+                    <td id="cell-4-afternoon"></td>
+                    <td id="cell-5-afternoon"></td>
+                    <td id="cell-6-afternoon"></td>
+                    <td id="cell-7-afternoon"></td>
+                    <td id="cell-8-afternoon"></td>
+                </tr>
+                <tr>
+                    <td style="font-weight:600;background:var(--gray-bg);">Tối</td>
+                    <td id="cell-2-evening"></td>
+                    <td id="cell-3-evening"></td>
+                    <td id="cell-4-evening"></td>
+                    <td id="cell-5-evening"></td>
+                    <td id="cell-6-evening"></td>
+                    <td id="cell-7-evening"></td>
+                    <td id="cell-8-evening"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .teacher-slot:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        background: #bae6fd !important;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        var API_BASE = 'http://localhost:5054';
+        var token = '@Context.Session.GetString("JWToken")';
+        var roles = '@Context.Session.GetString("Roles")';
+
+        function apiCall(method, url, callback) {
+            $.ajax({
+                url: API_BASE + url,
+                type: method,
+                headers: { 'Authorization': 'Bearer ' + token },
+                success: callback,
+                error: function (xhr) { 
+                    if (xhr.status === 401 || xhr.status === 403) {
+                        alert('Bạn không có quyền xem thông tin này.');
+                    } else {
+                        console.error(xhr.responseText || 'Lỗi lấy lịch');
+                    }
+                }
+            });
+        }
+
+        function getTimePeriod(timeStr) {
+            if (!timeStr) return 'morning';
+            var hour = parseInt(timeStr.split(':')[0]);
+            if (hour < 12) return 'morning';
+            if (hour < 17) return 'afternoon';
+            return 'evening';
+        }
+
+        function loadMySchedules() {
+            if (roles.includes("Teacher")) {
+                $('#roleBadge').text("Lịch Giảng Dạy");
+            } else if (roles.includes("Student")) {
+                $('#roleBadge').text("Lịch Học Viên");
+            } else {
+                $('#roleBadge').text("Lịch Hệ Thống");
+            }
+
+            apiCall('GET', '/api/Schedules/my-schedules', function (data) {
+                // Xoá trắng lưới
+                for (var d = 2; d <= 8; d++) {
+                    $('#cell-' + d + '-morning').html('');
+                    $('#cell-' + d + '-afternoon').html('');
+                    $('#cell-' + d + '-evening').html('');
+                }
+
+                if (!data || data.length === 0) return;
+
+                for (var i = 0; i < data.length; i++) {
+                    var s = data[i];
+                    var day = s.dayOfWeek;
+                    var period = getTimePeriod(s.startTime);
+                    var cellId = '#cell-' + day + '-' + period;
+                    
+                    var isTeacher = roles.includes("Teacher");
+                    var clickableStyle = isTeacher ? 'cursor:pointer; transition:all 0.2s;' : '';
+                    var onClick = isTeacher ? 'onclick="window.location.href=\'/ClassStudents/Index?classId=' + s.classId + '\'"' : '';
+                    var hoverClass = isTeacher ? 'class="schedule-slot teacher-slot"' : 'class="schedule-slot"';
+
+                    var html = '<div ' + hoverClass + ' ' + onClick + ' style="background:#e0f2fe;border-left:4px solid #0ea5e9;' + clickableStyle + '">';
+                    html += '<div class="slot-course" style="color:#0369a1;">' + (s.courseName || 'Lớp ' + s.classId) + '</div>';
+                    html += '<div class="slot-time" style="color:#0284c7;"><i class="bi bi-clock"></i> ' + s.startTime + ' - ' + s.endTime + '</div>';
+                    html += '<div class="slot-room" style="color:#0284c7;"><i class="bi bi-geo-alt"></i> ' + (s.room || '-') + '</div>';
+                    html += '</div>';
+                    
+                    $(cellId).append(html);
+                }
+            });
+        }
+
+        $(function () {
+            loadMySchedules();
+        });
+    </script>
+}

@@ -120,24 +120,34 @@
             var classId = $('#payClassId').val();
             if (!classId) return;
 
-            apiCall('GET', '/api/Users', null, function (users) {
+            apiCall('GET', '/api/Classes/' + classId + '/students', null, function (data) {
+                enrollmentsData = data;
                 var html = '<option value="">-- Chọn học viên --</option>';
-                var students = users.filter(function (u) { return u.roles && u.roles.indexOf('Student') >= 0; });
-                for (var i = 0; i < students.length; i++) {
-                    html += '<option value="' + students[i].userId + '">' + students[i].fullName + '</option>';
+                for (var i = 0; i < data.length; i++) {
+                    var s = data[i];
+                    var statusText = s.status === 'Paid' ? ' (Đã nộp)' : ' (Chưa nộp)';
+                    html += '<option value="' + s.enrollmentId + '">' + s.fullName + statusText + '</option>';
                 }
                 $('#payEnrollmentId').html(html);
             });
         }
 
         function loadPaymentInfo() {
-            var classId = $('#payClassId').val();
-            if (!classId) return;
+            var enrollmentId = $('#payEnrollmentId').val();
+            if (!enrollmentId) {
+                $('#paymentInfoPanel').hide();
+                return;
+            }
 
-            var cls = classesData.find(function (c) { return c.classId == classId; });
-            if (cls) {
-                $('#payCourseName').text(cls.courseName || '-');
-                $('#payClassName').text('Lớp ID: ' + cls.classId);
+            var enrol = enrollmentsData.find(function(e) { return e.enrollmentId == enrollmentId; });
+            var cls = classesData.find(function (c) { return c.classId == $('#payClassId').val(); });
+            
+            if (enrol) {
+                $('#payCourseName').text(cls ? cls.courseName : '-');
+                $('#payClassName').text('Lớp ID: ' + (cls ? cls.classId : '-'));
+                $('#payStatus').text(enrol.status || 'Pending')
+                               .removeClass('pending paid')
+                               .addClass(enrol.status === 'Paid' ? 'paid' : 'pending');
                 $('#paymentInfoPanel').show();
             }
 

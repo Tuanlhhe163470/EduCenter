@@ -7,6 +7,7 @@ using PRN_API.Models;
 using System.Text;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
+using PRN_API.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,6 +52,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.Converters.Add(new TimeOnlyJsonConverter());
     });
 
 builder.Services.AddEndpointsApiExplorer();

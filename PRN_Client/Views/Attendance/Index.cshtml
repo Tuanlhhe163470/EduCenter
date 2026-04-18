@@ -61,7 +61,9 @@
     <script>
         var API_BASE = 'http://localhost:5054';
         var token = '@Context.Session.GetString("JWToken")';
-        var dayNames = ['', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+        var userRole = '@Context.Session.GetString("Roles")';
+        var userId = '@Context.Session.GetString("UserId")';
+        var dayNames = ['', '', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
         var studentColors = ['#4f46e5', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
         var allClassesData = [];
 
@@ -79,6 +81,10 @@
 
         function loadClasses() {
             apiCall('GET', '/api/Classes', null, function (data) {
+                if (userRole.indexOf('Teacher') >= 0 && userRole.indexOf('Admin') === -1) {
+                    var tId = parseInt(userId);
+                    data = data.filter(function(c) { return c.teacherId === tId; });
+                }
                 allClassesData = data;
                 var html = '<option value="">-- Chọn lớp --</option>';
                 for (var i = 0; i < data.length; i++) {
@@ -92,14 +98,16 @@
             var classId = $('#attClassId').val();
             if (!classId) return;
 
-            apiCall('GET', '/api/Teacher/classes/0', null, function (data) {
+            apiCall('GET', '/api/Schedules/class/' + classId, null, function (data) {
                 var html = '<option value="">-- Chọn buổi --</option>';
+                var today = new Date();
+                var jsDayToServerDay = { 0: 8, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 7 };
+                var currentDayOfWeek = jsDayToServerDay[today.getDay()];
+
                 for (var i = 0; i < data.length; i++) {
-                    if (data[i].classId == classId && data[i].schedules) {
-                        for (var j = 0; j < data[i].schedules.length; j++) {
-                            var s = data[i].schedules[j];
-                            html += '<option value="' + s.scheduleId + '">' + (dayNames[s.dayOfWeek] || s.dayOfWeek) + ' (' + s.startTime + ' - ' + s.endTime + ')</option>';
-                        }
+                    var s = data[i];
+                    if (s.dayOfWeek === currentDayOfWeek) {
+                        html += '<option value="' + s.scheduleId + '">' + (dayNames[s.dayOfWeek] || s.dayOfWeek) + ' (' + s.startTime + ' - ' + s.endTime + ')</option>';
                     }
                 }
                 $('#attScheduleId').html(html);

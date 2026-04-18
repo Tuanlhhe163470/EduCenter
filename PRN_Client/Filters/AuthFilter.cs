@@ -13,7 +13,9 @@ namespace PRN_Client.Filters
             { "Payments", new[] { "Admin", "Staff" } },
             { "Attendance", new[] { "Admin", "Teacher" } },
             { "Users", new[] { "Admin" } },
+            { "ClassStudents", new[] { "Admin", "Teacher" } },
             { "Schedules", new[] { "Admin", "Staff", "Teacher", "Student" } },
+            { "MySchedule", new[] { "Admin", "Staff", "Teacher", "Student" } },
             { "Home", new[] { "Admin", "Staff", "Teacher", "Student" } }
         };
 
