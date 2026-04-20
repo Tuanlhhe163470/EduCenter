@@ -21,6 +21,13 @@
             </div>
         }
 
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success" style="border-radius: 12px; font-size: 14px; margin-bottom: 20px;">
+                <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            </div>
+        }
+
         <form method="post" asp-action="Login" id="loginForm">
             <div class="form-field" id="fieldUsername">
                 <label>Tên đăng nhập</label>
@@ -44,6 +51,10 @@
                 <i class="bi bi-box-arrow-in-right"></i> Đăng nhập
             </button>
         </form>
+
+        <div style="text-align: center; margin-top: 24px; font-size: 14px; color: #64748b;">
+            Chưa có tài khoản? <a href="@Url.Action("Register", "Auth")" style="color: #4f46e5; text-decoration: none; font-weight: 600;">Đăng ký ngay</a>
+        </div>
     </div>
 </div>
 

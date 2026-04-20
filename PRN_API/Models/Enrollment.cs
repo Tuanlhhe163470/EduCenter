@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace PRN_API.Models;
@@ -20,4 +20,8 @@ public partial class Enrollment
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
     public virtual User Student { get; set; } = null!;
+
+    public virtual ICollection<Grade> Grades { get; set; } = new List<Grade>();
+    
+    public virtual ICollection<StudentFeedback> StudentFeedbacks { get; set; } = new List<StudentFeedback>();
 }

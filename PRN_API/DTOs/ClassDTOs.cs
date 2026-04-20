@@ -15,5 +15,7 @@ namespace PRN_API.DTOs
         public int CourseId { get; set; }
         public int TeacherId { get; set; }
         public int? MaxStudents { get; set; }
+        public DateOnly StartDate { get; set; }
+        public DateOnly EndDate { get; set; }
     }
 }

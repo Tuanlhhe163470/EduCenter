@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace PRN_API.Models;
@@ -24,4 +24,6 @@ public partial class Class
     public virtual ICollection<Schedule> Schedules { get; set; } = new List<Schedule>();
 
     public virtual User Teacher { get; set; } = null!;
+
+    public virtual ICollection<Material> Materials { get; set; } = new List<Material>();
 }

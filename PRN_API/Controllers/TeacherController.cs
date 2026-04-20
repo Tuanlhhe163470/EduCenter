@@ -18,6 +18,24 @@ namespace PRN_API.Controllers
             _context = context;
         }
 
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetTeachers()
+        {
+            var teachers = await _context.Users
+                .Include(u => u.Roles)
+                .Where(u => u.Roles.Any(r => r.RoleName == "Teacher"))
+                .Take(4)
+                .Select(u => new {
+                    u.UserId,
+                    u.FullName,
+                    u.Email,
+                    Specialization = "Giảng viên chuyên môn"
+                })
+                .ToListAsync();
+            return Ok(teachers);
+        }
+
         [HttpGet("classes/{teacherId}")]
         public async Task<IActionResult> GetTeacherClasses(int teacherId)
         {

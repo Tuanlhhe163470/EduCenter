@@ -1,0 +1,212 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Tài liệu học tập";
+    var roles = Context.Session.GetString("Roles") ?? "";
+    bool canManage = roles.Contains("Admin") || roles.Contains("Teacher") || roles.Contains("Staff");
+}
+
+<div class="row g-4 animate-fade-in">
+    <div class="col-lg-4">
+        <div class="card-panel shadow-sm">
+            <div class="card-panel-header">
+                <h6 class="fw-bold mb-0"><i class="bi bi-funnel me-2 text-primary"></i>Chọn Lớp học</h6>
+            </div>
+            <div class="card-panel-body">
+                <div class="form-group-custom">
+                    <label>Lớp học</label>
+                    <select class="filter-select w-100" id="matClassId" onchange="loadMaterials()">
+                        <option value="">-- Chọn lớp học --</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        @if (canManage)
+        {
+            <div class="card-panel mt-4 shadow-sm">
+                <div class="card-panel-header">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-plus-circle me-2 text-success"></i>Thêm học liệu</h6>
+                </div>
+                <div class="card-panel-body">
+                    <div class="form-group-custom">
+                        <label>Tiêu đề tài liệu</label>
+                        <input type="text" id="matTitle" class="form-control" placeholder="E.g. Bài tập tuần 1...">
+                    </div>
+                    <div class="form-group-custom">
+                        <label>Phân loại</label>
+                        <select id="matType" class="form-select">
+                            <option value="PDF">Tài liệu PDF</option>
+                            <option value="Video">Video bài giảng</option>
+                            <option value="Document">Văn bản / Link bài tập</option>
+                            <option value="Link">Liên kết khác</option>
+                        </select>
+                    </div>
+                    <div class="form-group-custom">
+                        <label>Đường dẫn tài liệu (Link)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-2 border-end-0"><i class="bi bi-link-45deg"></i></span>
+                            <input type="text" id="matUrl" class="form-control border-2 border-start-0" style="border-color:var(--gray-light);" placeholder="https://...">
+                        </div>
+                    </div>
+                    <div class="form-group-custom">
+                        <label>Mô tả thêm (Không bắt buộc)</label>
+                        <textarea id="matDesc" class="form-control" rows="2" placeholder="Nội dung tóm tắt..."></textarea>
+                    </div>
+                    <button class="btn-success-custom w-100 justify-content-center py-2" onclick="addMaterial()">
+                        <i class="bi bi-cloud-arrow-up-fill"></i> Tải lên ngay
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card-panel h-100 shadow-sm">
+            <div class="card-panel-header d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-collection-play me-2 text-primary"></i>Danh sách học liệu</h6>
+                <span id="matCount" class="badge-status active">0 tài liệu</span>
+            </div>
+            <div class="card-panel-body p-4">
+                <div id="materialsList" class="row g-3">
+                    <div class="text-center py-5 w-100 text-muted">
+                        <i class="bi bi-folder-x display-1 opacity-25"></i>
+                        <p class="mt-3">Vui lòng chọn lớp học để xem tài liệu</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var API_BASE = 'http://localhost:5054';
+        var token = '@Context.Session.GetString("JWToken")';
+        var currentClassId = '@ViewBag.ClassId';
+
+        function apiCall(method, url, data, callback) {
+            $.ajax({
+                url: API_BASE + url,
+                type: method,
+                headers: { 'Authorization': 'Bearer ' + token },
+                contentType: 'application/json',
+                data: data ? JSON.stringify(data) : null,
+                success: callback,
+                error: function (xhr) { alert(xhr.responseText || 'Lỗi hệ thống'); }
+            });
+        }
+
+        function loadClasses() {
+            apiCall('GET', '/api/Schedules/my-schedules', null, function (data) {
+                var uniqueClasses = [];
+                var html = '<option value="">-- Chọn lớp học --</option>';
+                data.forEach(function(s) {
+                    if (uniqueClasses.indexOf(s.classId) === -1) {
+                        uniqueClasses.push(s.classId);
+                        var selected = s.classId == currentClassId ? 'selected' : '';
+                        html += '<option value="' + s.classId + '" ' + selected + '>' + (s.courseName || 'Lớp ' + s.classId) + '</option>';
+                    }
+                });
+                $('#matClassId').html(html);
+                if (currentClassId) loadMaterials();
+            });
+        }
+
+        function loadMaterials() {
+            var cid = $('#matClassId').val();
+            if (!cid) return;
+
+            apiCall('GET', '/api/Materials/class/' + cid, null, function (data) {
+                $('#matCount').text(data.length + ' tài liệu');
+                if (data.length === 0) {
+                    $('#materialsList').html('<div class="text-center py-5 w-100 text-muted"><i class="bi bi-slash-circle fs-1"></i><p class="mt-2">Lớp chưa có học liệu nào.</p></div>');
+                    return;
+                }
+
+                var html = '';
+                data.forEach(function(m) {
+                    var iconColor = 'text-primary';
+                    var icon = 'bi-file-earmark-text';
+                    if (m.materialType === 'Video') { icon = 'bi-play-circle-fill'; iconColor = 'text-danger'; }
+                    if (m.materialType === 'PDF') { icon = 'bi-file-earmark-pdf-fill'; iconColor = 'text-warning'; }
+                    if (m.materialType === 'Link') { icon = 'bi-link-45deg'; iconColor = 'text-success'; }
+
+                    html += '<div class="col-md-6">';
+                    html += '  <div class="material-card border rounded p-3 h-100 position-relative">';
+                    html += '    <div class="d-flex align-items-center mb-2">';
+                    html += '      <div class="material-icon ' + iconColor + ' fs-3 me-3"><i class="bi ' + icon + '"></i></div>';
+                    html += '      <div class="flex-grow-1">';
+                    html += '        <h6 class="mb-0 fw-bold">' + m.title + '</h6>';
+                    html += '        <small class="text-muted">' + m.materialType + ' | ' + new Date(m.uploadDate).toLocaleDateString() + '</small>';
+                    html += '      </div>';
+                    html += '    </div>';
+                    html += '    <p class="small text-muted mb-3">' + (m.description || 'Không có mô tả') + '</p>';
+                    html += '    <div class="d-flex gap-2">';
+                    html += '      <a href="' + m.url + '" target="_blank" class="btn btn-sm btn-primary-custom flex-grow-1"><i class="bi bi-box-arrow-up-right me-1"></i> Truy cập</a>';
+                    if ('@canManage' === 'True') {
+                        html += '      <button class="btn btn-sm btn-outline-danger" onclick="deleteMaterial(' + m.materialId + ')"><i class="bi bi-trash"></i></button>';
+                    }
+                    html += '    </div>';
+                    html += '  </div>';
+                    html += '</div>';
+                });
+                $('#materialsList').html(html);
+            });
+        }
+
+        function addMaterial() {
+            var cid = $('#matClassId').val();
+            if (!cid) { alert('Vui lòng chọn lớp'); return; }
+
+            var obj = {
+                classId: parseInt(cid),
+                title: $('#matTitle').val(),
+                materialType: $('#matType').val(),
+                url: $('#matUrl').val(),
+                description: $('#matDesc').val()
+            };
+
+            if (!obj.title || !obj.url) { alert('Vui lòng điền đủ thông tin bắt buộc'); return; }
+
+            apiCall('POST', '/api/Materials', obj, function() {
+                $('#matTitle, #matUrl, #matDesc').val('');
+                loadMaterials();
+            });
+        }
+
+        function deleteMaterial(id) {
+            if (!confirm('Bạn có chắc muốn xóa tài liệu này?')) return;
+            apiCall('DELETE', '/api/Materials/' + id, null, function() {
+                loadMaterials();
+            });
+        }
+
+        $(function () {
+            loadClasses();
+        });
+    </script>
+}
+
+<style>
+    .material-card {
+        background: var(--white);
+        transition: var(--transition);
+        border: 1px solid var(--gray-light) !important;
+    }
+    .material-card:hover {
+        border-color: var(--primary) !important;
+        box-shadow: var(--shadow-md);
+        transform: translateY(-3px);
+    }
+    .material-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--gray-bg);
+        border-radius: 10px;
+    }
+    .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+    @@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
