@@ -61,6 +61,14 @@
                     <label>Sĩ số tối đa</label>
                     <input type="number" class="form-control" id="classMaxStudents" value="20" />
                 </div>
+                <div class="form-group-custom">
+                    <label>Ngày khai giảng</label>
+                    <input type="date" class="form-control" id="classStartDate" />
+                </div>
+                <div class="form-group-custom">
+                    <label>Ngày kết thúc</label>
+                    <input type="date" class="form-control" id="classEndDate" />
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
@@ -162,8 +170,14 @@
             var obj = {
                 courseId: parseInt($('#classCourseId').val()),
                 teacherId: parseInt($('#classTeacherId').val()),
-                maxStudents: parseInt($('#classMaxStudents').val()) || 20
+                maxStudents: parseInt($('#classMaxStudents').val()) || 20,
+                startDate: $('#classStartDate').val(),
+                endDate: $('#classEndDate').val()
             };
+            if (!obj.startDate || !obj.endDate) {
+                alert('Vui lòng chọn ngày khai giảng và ngày kết thúc');
+                return;
+            }
             apiCall('POST', '/api/Classes', obj, function () {
                 bootstrap.Modal.getInstance(document.getElementById('classModal')).hide();
                 loadClasses();

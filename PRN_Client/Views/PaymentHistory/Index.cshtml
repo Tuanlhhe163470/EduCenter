@@ -1,0 +1,78 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Lịch sử Thanh toán";
+}
+
+<div class="card-panel mb-4 shadow-sm animate-fade-in">
+    <div class="card-panel-header">
+        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-wallet2 text-success me-2"></i>Lịch sử đóng học phí</h5>
+        <small class="text-muted">Thông tin các khoản học phí bạn đã hoàn thành tại trung tâm.</small>
+    </div>
+    <div class="card-panel-body p-0">
+        <div class="table-responsive">
+            <table class="data-table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:180px;">Mã hóa đơn</th>
+                        <th>Nội dung khóa học</th>
+                        <th style="width:160px;">Số tiền</th>
+                        <th style="width:160px;">Hình thức</th>
+                        <th style="width:200px;">Ngày nộp</th>
+                    </tr>
+                </thead>
+                <tbody id="paymentList">
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="spinner-border text-success"></div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var API_BASE = 'http://localhost:5054';
+        var token = '@Context.Session.GetString("JWToken")';
+
+        function apiCall(method, url, data, callback) {
+            $.ajax({
+                url: API_BASE + url,
+                type: method,
+                headers: { 'Authorization': 'Bearer ' + token },
+                success: callback,
+                error: function (xhr) { alert(xhr.responseText || 'Lỗi hệ thống'); }
+            });
+        }
+
+        function loadPayments() {
+            apiCall('GET', '/api/Payments/my-payments', null, function (data) {
+                if (data.length === 0) {
+                    $('#paymentList').html('<tr><td colspan="5" class="text-center py-5 text-muted"><i class="bi bi-receipt fs-1 d-block opacity-25"></i>Bạn chưa có lịch sử thanh toán nào.</td></tr>');
+                    return;
+                }
+
+                var html = '';
+                data.forEach(function(p) {
+                    html += '<tr>';
+                    html += '<td><span class="badge-status active">#PAY-' + p.paymentId + '</span></td>';
+                    html += '<td class="fw-bold text-dark">' + p.courseName + '</td>';
+                    html += '<td class="fw-bold text-success fs-5">' + Number(p.amount || 0).toLocaleString('vi-VN') + 'đ</td>';
+                    html += '<td><span class="badge bg-light text-dark border">' + p.method + '</span></td>';
+                    html += '<td>' + new Date(p.paymentDate).toLocaleString('vi-VN') + '</td>';
+                    html += '</tr>';
+                });
+                $('#paymentList').html(html);
+            });
+        }
+
+        $(function () { loadPayments(); });
+    </script>
+}
+
+<style>
+    .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+    @@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>

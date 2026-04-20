@@ -12,6 +12,11 @@ namespace PRN_Client.Filters
             { "Enrollments", new[] { "Admin", "Staff" } },
             { "Payments", new[] { "Admin", "Staff" } },
             { "Attendance", new[] { "Admin", "Teacher" } },
+            { "Grades", new[] { "Admin", "Teacher" } },
+            { "Materials", new[] { "Admin", "Teacher", "Staff", "Student" } },
+            { "MyProgress", new[] { "Student" } },
+            { "CourseCatalog", new[] { "Student" } },
+            { "PaymentHistory", new[] { "Student" } },
             { "Users", new[] { "Admin" } },
             { "ClassStudents", new[] { "Admin", "Teacher" } },
             { "Schedules", new[] { "Admin", "Staff", "Teacher", "Student" } },
@@ -23,7 +28,7 @@ namespace PRN_Client.Filters
         {
             var controller = context.RouteData.Values["controller"]?.ToString();
 
-            if (controller == "Auth")
+            if (controller == "Auth" || controller == "Home")
                 return;
 
             var token = context.HttpContext.Session.GetString("JWToken");
