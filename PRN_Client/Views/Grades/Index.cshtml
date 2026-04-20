@@ -1,0 +1,180 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Quản lý Điểm số";
+}
+
+<div class="card-panel mb-4 shadow-sm animate-fade-in">
+    <div class="card-panel-header d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-award text-primary me-2"></i>Bảng điểm Lớp học</h5>
+            <small class="text-muted">Lưu ý: Điểm số được tính theo trọng số 10% - 30% - 60%</small>
+        </div>
+        <div class="toolbar">
+            <select class="filter-select" id="gradeClassId" onchange="loadGrades()">
+                <option value="">-- Chọn lớp học --</option>
+            </select>
+            <button class="btn-primary-custom" onclick="saveAllGrades()">
+                <i class="bi bi-cloud-upload"></i> Lưu thay đổi
+            </button>
+        </div>
+    </div>
+    <div class="card-panel-body p-0">
+        <div class="table-responsive">
+            <table class="data-table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:100px;">MSSV</th>
+                        <th>Học viên</th>
+                        <th style="width:140px;">Chuyên cần (10%)</th>
+                        <th style="width:140px;">Giữa kỳ (30%)</th>
+                        <th style="width:140px;">Cuối kỳ (60%)</th>
+                        <th style="width:140px;">Tổng kết</th>
+                        <th>Ghi chú</th>
+                    </tr>
+                </thead>
+                <tbody id="gradesList">
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <i class="bi bi-inbox text-muted mt-3" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">Vui lòng chọn lớp để xem dữ liệu</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="saveSuccess" class="toast-notification" style="display:none; bottom:30px; right:30px; background:var(--success);">
+    <i class="bi bi-check-circle-fill me-2"></i> <span>Đã cập nhật bảng điểm thành công!</span>
+</div>
+
+@section Scripts {
+    <script>
+        var API_BASE = 'http://localhost:5054';
+        var token = '@Context.Session.GetString("JWToken")';
+        var currentClassId = '@ViewBag.ClassId';
+
+        function apiCall(method, url, data, callback) {
+            $.ajax({
+                url: API_BASE + url,
+                type: method,
+                headers: { 'Authorization': 'Bearer ' + token },
+                contentType: 'application/json',
+                data: data ? JSON.stringify(data) : null,
+                success: callback,
+                error: function (xhr) { alert(xhr.responseText || 'Lỗi hệ thống'); }
+            });
+        }
+
+        function calculateTotal(attendance, midterm, final) {
+            var att = parseFloat(attendance) || 0;
+            var mid = parseFloat(midterm) || 0;
+            var fin = parseFloat(final) || 0;
+            var total = (att * 0.1) + (mid * 0.3) + (fin * 0.6);
+            return total.toFixed(2);
+        }
+
+        function getGradeBadgeClass(score) {
+            var val = parseFloat(score);
+            if (val >= 8.5) return 'bg-success';
+            if (val >= 5.0) return 'bg-primary';
+            return 'bg-danger';
+        }
+
+        function loadClasses() {
+            apiCall('GET', '/api/Schedules/my-schedules', null, function (data) {
+                var uniqueClasses = [];
+                var html = '<option value="">-- Chọn lớp học --</option>';
+                data.forEach(function(s) {
+                    if (uniqueClasses.indexOf(s.classId) === -1) {
+                        uniqueClasses.push(s.classId);
+                        var selected = s.classId == currentClassId ? 'selected' : '';
+                        html += '<option value="' + s.classId + '" ' + selected + '>' + (s.courseName || 'Lớp ' + s.classId) + '</option>';
+                    }
+                });
+                $('#gradeClassId').html(html);
+                if (currentClassId) loadGrades();
+            });
+        }
+
+        function loadGrades() {
+            var cid = $('#gradeClassId').val();
+            if (!cid) return;
+
+            $('#gradesList').html('<tr><td colspan="7" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>');
+
+            apiCall('GET', '/api/Grades/class/' + cid, null, function (data) {
+                var html = '';
+                data.forEach(function(item) {
+                    var g = item.grade || { attendanceGrade: 0, midtermGrade: 0, finalGrade: 0, note: '' };
+                    var total = calculateTotal(g.attendanceGrade, g.midtermGrade, g.finalGrade);
+                    
+                    html += '<tr class="grade-row" data-enrollment-id="' + item.enrollmentId + '" data-grade-id="' + (g.gradeId || 0) + '">';
+                    html += '<td><span class="badge-status active">#' + item.studentId + '</span></td>';
+                    html += '<td class="fw-bold">' + item.fullName + '</td>';
+                    html += '<td><input type="number" class="form-control form-control-sm grade-input" data-type="att" value="' + (g.attendanceGrade || 0) + '" min="0" max="10" step="0.1"></td>';
+                    html += '<td><input type="number" class="form-control form-control-sm grade-input" data-type="mid" value="' + (g.midtermGrade || 0) + '" min="0" max="10" step="0.1"></td>';
+                    html += '<td><input type="number" class="form-control form-control-sm grade-input" data-type="final" value="' + (g.finalGrade || 0) + '" min="0" max="10" step="0.1"></td>';
+                    html += '<td><span class="badge ' + getGradeBadgeClass(total) + ' rounded-pill grade-total-badge px-3 py-2">' + total + '</span></td>';
+                    html += '<td><input type="text" class="form-control form-control-sm grade-note" value="' + (g.note || '') + '" placeholder="Ghi chú..."></td>';
+                    html += '</tr>';
+                });
+                $('#gradesList').html(html || '<tr><td colspan="7" class="text-center py-4 text-muted">Lớp chưa có học viên</td></tr>');
+
+                $('.grade-input').on('input', function() {
+                    var tr = $(this).closest('tr');
+                    var att = tr.find('[data-type="att"]').val();
+                    var mid = tr.find('[data-type="mid"]').val();
+                    var final = tr.find('[data-type="final"]').val();
+                    var total = calculateTotal(att, mid, final);
+                    var badge = tr.find('.grade-total-badge');
+                    badge.text(total);
+                    badge.removeClass('bg-success bg-primary bg-danger').addClass(getGradeBadgeClass(total));
+                });
+            });
+        }
+
+        function saveAllGrades() {
+            var grades = [];
+            $('#gradesList tr.grade-row').each(function() {
+                var tr = $(this);
+                grades.push({
+                    enrollmentId: parseInt(tr.data('enrollment-id')),
+                    gradeId: parseInt(tr.data('grade-id')),
+                    attendanceGrade: parseFloat(tr.find('[data-type="att"]').val()),
+                    midtermGrade: parseFloat(tr.find('[data-type="mid"]').val()),
+                    finalGrade: parseFloat(tr.find('[data-type="final"]').val()),
+                    note: tr.find('.grade-note').val()
+                });
+            });
+
+            apiCall('POST', '/api/Grades', grades, function() {
+                $('#saveSuccess').fadeIn().delay(2000).fadeOut();
+                loadGrades();
+            });
+        }
+
+        $(function () {
+            loadClasses();
+        });
+    </script>
+}
+
+<style>
+    .grade-input {
+        border-radius: 6px;
+        text-align: center;
+        max-width: 90px;
+        border: 1px solid var(--gray-light);
+        transition: var(--transition);
+    }
+    .grade-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .grade-row { transition: var(--transition); }
+    .grade-row:hover { background: var(--primary-bg) !important; }
+    .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+    @@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>

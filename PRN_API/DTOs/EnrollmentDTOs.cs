@@ -5,5 +5,6 @@ namespace PRN_API.DTOs
         public int ClassId { get; set; }
         // StudentId if Staff enrolls specific sub-users, else take from Token
         public int StudentId { get; set; }
+        public DateTime? EnrollDate { get; set; }
     }
 }

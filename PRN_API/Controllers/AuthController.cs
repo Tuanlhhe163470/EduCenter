@@ -64,5 +64,33 @@ namespace PRN_API.Controllers
                 roles = user.Roles.Select(r => r.RoleName).ToList()
             });
         }
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] CreateUserDTO dto)
+        {
+            if (await _context.Users.AnyAsync(u => u.Username == dto.Username))
+            {
+                return BadRequest("Tên đăng nhập đã tồn tại.");
+            }
+
+            var studentRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Student");
+            if (studentRole == null)
+            {
+                return BadRequest("Hệ thống chưa cấu hình vai trò Học viên.");
+            }
+
+            var user = new User
+            {
+                Username = dto.Username,
+                PasswordHash = dto.Password,
+                FullName = dto.FullName,
+                Email = dto.Email,
+                IsActive = true,
+                Roles = new List<Role> { studentRole }
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+            return Ok(new { userId = user.UserId });
+        }
     }
 }

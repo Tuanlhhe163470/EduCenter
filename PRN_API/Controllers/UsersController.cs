@@ -8,7 +8,7 @@ namespace PRN_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Staff")]
     public class UsersController : ControllerBase
     {
         private readonly PrnProjectContext _context;
@@ -39,6 +39,7 @@ namespace PRN_API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDTO dto)
         {
             if (await _context.Users.AnyAsync(u => u.Username == dto.Username))
@@ -65,6 +66,7 @@ namespace PRN_API.Controllers
         }
 
         [HttpPut("{id}/status")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ToggleStatus(int id)
         {
             var user = await _context.Users.FindAsync(id);

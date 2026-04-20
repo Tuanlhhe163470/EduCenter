@@ -19,6 +19,7 @@ namespace PRN_API.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         [EnableQuery]
         public IActionResult GetCourses()
         {

@@ -55,7 +55,33 @@ namespace PRN_Client.Controllers
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();
-            return RedirectToAction("Login");
+            return RedirectToAction("Index", "Home");
+        }
+
+        [HttpGet]
+        public IActionResult Register()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Register(string username, string fullName, string email, string password)
+        {
+            var client = _clientFactory.CreateClient();
+            var regData = new { Username = username, FullName = fullName, Email = email, Password = password };
+            var content = new StringContent(JsonSerializer.Serialize(regData), Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync("http://localhost:5054/api/Auth/register", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                TempData["SuccessMessage"] = "Đăng ký thành công! Vui lòng đăng nhập.";
+                return RedirectToAction("Login");
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            ViewBag.Error = error;
+            return View();
         }
     }
 }

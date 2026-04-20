@@ -11,6 +11,11 @@
             </div>
             <div class="card-panel-body">
                 <div class="form-group-custom">
+                    <label>Tìm kiếm học viên</label>
+                    <div class="search-box mb-2">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="studentSearch" placeholder="Nhập tên hoặc username..." onkeyup="filterStudents()" />
+                    </div>
                     <label>Chọn Học viên</label>
                     <select class="form-select" id="enrollStudentId">
                         <option value="">-- Tìm và chọn học viên --</option>
@@ -87,6 +92,7 @@
     <script>
         var API_BASE = 'http://localhost:5054';
         var token = '@Context.Session.GetString("JWToken")';
+        var allStudents = [];
 
         function apiCall(method, url, data, callback, errorCallback) {
             $.ajax({
@@ -104,13 +110,8 @@
 
         function loadDropdowns() {
             apiCall('GET', '/api/Users', null, function (data) {
-                var html = '<option value="">-- Chọn học viên --</option>';
-                for (var i = 0; i < data.length; i++) {
-                    if (data[i].roles && data[i].roles.indexOf('Student') >= 0) {
-                        html += '<option value="' + data[i].userId + '">' + data[i].fullName + ' (' + data[i].username + ')</option>';
-                    }
-                }
-                $('#enrollStudentId').html(html);
+                allStudents = data.filter(u => u.roles && u.roles.indexOf('Student') >= 0);
+                renderStudentOptions(allStudents);
             });
 
             apiCall('GET', '/api/Classes', null, function (data) {
@@ -120,6 +121,22 @@
                 }
                 $('#enrollClassId').html(html);
             });
+        }
+
+        function renderStudentOptions(students) {
+            var html = '<option value="">-- Chọn học viên --</option>';
+            for (var i = 0; i < students.length; i++) {
+                html += '<option value="' + students[i].userId + '">' + students[i].fullName + ' (' + students[i].username + ')</option>';
+            }
+            $('#enrollStudentId').html(html);
+        }
+
+        function filterStudents() {
+            var query = $('#studentSearch').val().toLowerCase();
+            var filtered = allStudents.filter(function (s) {
+                return (s.fullName || '').toLowerCase().includes(query) || (s.username || '').toLowerCase().includes(query);
+            });
+            renderStudentOptions(filtered);
         }
 
         function submitEnrollment() {
@@ -135,7 +152,11 @@
             $('#enrollError').hide();
             $('#enrollSuccess').hide();
 
-            var obj = { studentId: parseInt(studentId), classId: parseInt(classId) };
+            var obj = { 
+                studentId: parseInt(studentId), 
+                classId: parseInt(classId),
+                enrollDate: $('#enrollDate').val()
+            };
             apiCall('POST', '/api/Enrollments', obj, function () {
                 $('#enrollSuccess').show();
                 setTimeout(function () { $('#enrollSuccess').hide(); }, 3000);

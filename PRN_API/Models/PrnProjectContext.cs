@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,8 +28,10 @@ public partial class PrnProjectContext : DbContext
     public virtual DbSet<Role> Roles { get; set; }
 
     public virtual DbSet<Schedule> Schedules { get; set; }
-
     public virtual DbSet<User> Users { get; set; }
+    public virtual DbSet<Grade> Grades { get; set; }
+    public virtual DbSet<Material> Materials { get; set; }
+    public virtual DbSet<StudentFeedback> StudentFeedbacks { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -189,6 +191,27 @@ public partial class PrnProjectContext : DbContext
                         j.IndexerProperty<int>("UserId").HasColumnName("UserID");
                         j.IndexerProperty<int>("RoleId").HasColumnName("RoleID");
                     });
+        });
+
+        modelBuilder.Entity<Grade>(entity =>
+        {
+            entity.ToTable("Grades");
+            entity.HasKey(e => e.GradeId);
+            entity.Property(e => e.AttendanceGrade).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.MidtermGrade).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.FinalGrade).HasColumnType("decimal(5, 2)");
+        });
+
+        modelBuilder.Entity<Material>(entity =>
+        {
+            entity.ToTable("Materials");
+            entity.HasKey(e => e.MaterialId);
+        });
+
+        modelBuilder.Entity<StudentFeedback>(entity =>
+        {
+            entity.ToTable("StudentFeedbacks");
+            entity.HasKey(e => e.FeedbackId);
         });
 
         OnModelCreatingPartial(modelBuilder);

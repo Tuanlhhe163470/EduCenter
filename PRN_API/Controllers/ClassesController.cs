@@ -78,7 +78,9 @@ namespace PRN_API.Controllers
             {
                 CourseId = dto.CourseId,
                 TeacherId = dto.TeacherId,
-                MaxStudents = dto.MaxStudents ?? 20
+                MaxStudents = dto.MaxStudents ?? 20,
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate
             };
 
             _context.Classes.Add(newClass);
