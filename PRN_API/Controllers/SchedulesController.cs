@@ -91,6 +91,55 @@ namespace PRN_API.Controllers
             return Forbid();
         }
 
+        [HttpGet("my-classes")]
+        public async Task<IActionResult> GetMyClasses()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdStr, out int userId)) return Unauthorized();
+
+            if (User.IsInRole("Teacher"))
+            {
+                var classes = await _context.Classes
+                    .Where(c => c.TeacherId == userId)
+                    .Include(c => c.Course)
+                    .Select(c => new
+                    {
+                        ClassId = c.ClassId,
+                        CourseName = c.Course != null ? c.Course.CourseName : "Lớp " + c.ClassId
+                    })
+                    .ToListAsync();
+                return Ok(classes);
+            }
+            else if (User.IsInRole("Student"))
+            {
+                var classes = await _context.Enrollments
+                    .Where(e => e.StudentId == userId && e.Status == "Paid")
+                    .Include(e => e.Class)
+                        .ThenInclude(c => c.Course)
+                    .Select(e => new
+                    {
+                        ClassId = e.ClassId,
+                        CourseName = e.Class.Course != null ? e.Class.Course.CourseName : "Lớp " + e.ClassId
+                    })
+                    .ToListAsync();
+                return Ok(classes);
+            }
+            else if (User.IsInRole("Admin") || User.IsInRole("Staff"))
+            {
+                var classes = await _context.Classes
+                    .Include(c => c.Course)
+                    .Select(c => new
+                    {
+                        ClassId = c.ClassId,
+                        CourseName = c.Course != null ? c.Course.CourseName : "Lớp " + c.ClassId
+                    })
+                    .ToListAsync();
+                return Ok(classes);
+            }
+
+            return Forbid();
+        }
+
         [HttpPost]
         [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> AddSchedule([FromBody] ScheduleDTO dto)

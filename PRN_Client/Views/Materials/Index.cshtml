@@ -9,55 +9,69 @@
     <div class="col-lg-4">
         <div class="card-panel shadow-sm">
             <div class="card-panel-header">
-                <h6 class="fw-bold mb-0"><i class="bi bi-funnel me-2 text-primary"></i>Chọn Lớp học</h6>
+                <h6 class="fw-bold mb-0">
+                    <i class="bi bi-person-workspace me-2 text-primary"></i>Quản lý Học liệu
+                </h6>
             </div>
             <div class="card-panel-body">
+                <!-- Chọn lớp học -->
                 <div class="form-group-custom">
-                    <label>Lớp học</label>
-                    <select class="filter-select w-100" id="matClassId" onchange="loadMaterials()">
+                    <label class="fw-bold text-dark"><i class="bi bi-funnel me-1"></i>Chọn Lớp học</label>
+                    <select class="form-select border-2" id="matClassId" onchange="loadMaterials()">
                         <option value="">-- Chọn lớp học --</option>
                     </select>
+                    <p class="small text-muted mt-2 mb-0">Vui lòng chọn lớp để xem và quản lý tài liệu.</p>
                 </div>
+
+                @if (canManage)
+                {
+                    <hr class="my-4" style="border-style: dashed; border-color: var(--gray-light);">
+                    
+                    <div class="manage-section animate-fade-in">
+                        <div class="d-flex align-items-center mb-3 text-success">
+                            <i class="bi bi-plus-circle-dotted fs-5 me-2"></i>
+                            <h6 class="fw-bold mb-0">Thêm học liệu mới</h6>
+                        </div>
+
+                        <div class="form-group-custom">
+                            <label>Tiêu đề tài liệu</label>
+                            <input type="text" id="matTitle" class="form-control" placeholder="E.g. Bài tập tuần 1...">
+                        </div>
+                        
+                        <div class="row g-2">
+                            <div class="col-md-12">
+                                <div class="form-group-custom">
+                                    <label>Phân loại</label>
+                                    <select id="matType" class="form-select">
+                                        <option value="PDF">📁 Tài liệu PDF</option>
+                                        <option value="Video">🎥 Video bài giảng</option>
+                                        <option value="Document">📄 Văn bản / Link bài tập</option>
+                                        <option value="Link">🔗 Liên kết khác</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group-custom">
+                            <label>Đường dẫn tài liệu (Link)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-2 border-end-0"><i class="bi bi-link-45deg"></i></span>
+                                <input type="text" id="matUrl" class="form-control border-2 border-start-0" placeholder="https://...">
+                            </div>
+                        </div>
+
+                        <div class="form-group-custom">
+                            <label>Mô tả thêm (Không bắt buộc)</label>
+                            <textarea id="matDesc" class="form-control" rows="2" placeholder="Nội dung tóm tắt..."></textarea>
+                        </div>
+
+                        <button class="btn-success-custom w-100 justify-content-center py-2 shadow-sm" onclick="addMaterial()">
+                            <i class="bi bi-cloud-arrow-up-fill me-2"></i> Tải lên ngay
+                        </button>
+                    </div>
+                }
             </div>
         </div>
-
-        @if (canManage)
-        {
-            <div class="card-panel mt-4 shadow-sm">
-                <div class="card-panel-header">
-                    <h6 class="fw-bold mb-0"><i class="bi bi-plus-circle me-2 text-success"></i>Thêm học liệu</h6>
-                </div>
-                <div class="card-panel-body">
-                    <div class="form-group-custom">
-                        <label>Tiêu đề tài liệu</label>
-                        <input type="text" id="matTitle" class="form-control" placeholder="E.g. Bài tập tuần 1...">
-                    </div>
-                    <div class="form-group-custom">
-                        <label>Phân loại</label>
-                        <select id="matType" class="form-select">
-                            <option value="PDF">Tài liệu PDF</option>
-                            <option value="Video">Video bài giảng</option>
-                            <option value="Document">Văn bản / Link bài tập</option>
-                            <option value="Link">Liên kết khác</option>
-                        </select>
-                    </div>
-                    <div class="form-group-custom">
-                        <label>Đường dẫn tài liệu (Link)</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-2 border-end-0"><i class="bi bi-link-45deg"></i></span>
-                            <input type="text" id="matUrl" class="form-control border-2 border-start-0" style="border-color:var(--gray-light);" placeholder="https://...">
-                        </div>
-                    </div>
-                    <div class="form-group-custom">
-                        <label>Mô tả thêm (Không bắt buộc)</label>
-                        <textarea id="matDesc" class="form-control" rows="2" placeholder="Nội dung tóm tắt..."></textarea>
-                    </div>
-                    <button class="btn-success-custom w-100 justify-content-center py-2" onclick="addMaterial()">
-                        <i class="bi bi-cloud-arrow-up-fill"></i> Tải lên ngay
-                    </button>
-                </div>
-            </div>
-        }
     </div>
 
     <div class="col-lg-8">
@@ -97,7 +111,7 @@
         }
 
         function loadClasses() {
-            apiCall('GET', '/api/Schedules/my-schedules', null, function (data) {
+            apiCall('GET', '/api/Schedules/my-classes', null, function (data) {
                 var uniqueClasses = [];
                 var html = '<option value="">-- Chọn lớp học --</option>';
                 data.forEach(function(s) {
@@ -143,7 +157,7 @@
                     html += '    <p class="small text-muted mb-3">' + (m.description || 'Không có mô tả') + '</p>';
                     html += '    <div class="d-flex gap-2">';
                     html += '      <a href="' + m.url + '" target="_blank" class="btn btn-sm btn-primary-custom flex-grow-1"><i class="bi bi-box-arrow-up-right me-1"></i> Truy cập</a>';
-                    if ('@canManage' === 'True') {
+                    if ('@canManage'.toLowerCase() === 'true') {
                         html += '      <button class="btn btn-sm btn-outline-danger" onclick="deleteMaterial(' + m.materialId + ')"><i class="bi bi-trash"></i></button>';
                     }
                     html += '    </div>';
