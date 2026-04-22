@@ -55,9 +55,19 @@
 
                 var html = '';
                 data.forEach(function(item) {
-                    var g = item.grade || { attendanceGrade: 0, midtermGrade: 0, finalGrade: 0 };
+                    var g = item.grade || { attendanceGrade: 0, midtermGrade: 0, finalGrade: 0, note: '' };
                     var total = calculateTotal(g);
-                    var feedback = item.feedback || { comment: 'Giáo viên chưa có nhận xét cho môn học này.', rating: 0 };
+                    
+                    var feedback = item.feedback || { comment: '', rating: 0 };
+                    var displayComment = feedback.comment || '';
+                    
+                    // Ưu tiên hiển thị note từ bảng điểm nếu có
+                    if (g.note && g.note.trim() !== '' && g.note !== displayComment) {
+                        displayComment = displayComment ? (displayComment + " | " + g.note) : g.note;
+                    }
+                    
+                    if (!displayComment) displayComment = 'Giáo viên chưa có nhận xét cho môn học này.';
+                    
                     var progressPer = (total * 10); // scale 0-10 to 0-100%
 
                     html += '<div class="col-md-6">';
@@ -83,7 +93,7 @@
                     html += '        <div class="mb-2">';
                     for(var i=1; i<=5; i++) html += '<i class="bi ' + (i <= (feedback.rating || 0) ? 'bi-star-fill text-warning' : 'bi-star text-muted') + ' me-1"></i>';
                     html += '        </div>';
-                    html += '        <p class="small mb-0 text-dark" style="line-height:1.5;">"' + feedback.comment + '"</p>';
+                    html += '        <p class="small mb-0 text-dark" style="line-height:1.5;">"' + displayComment + '"</p>';
                     html += '      </div>';
                     html += '    </div>';
                     html += '  </div>';
