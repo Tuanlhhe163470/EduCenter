@@ -47,12 +47,15 @@
             </div>
             <div class="sidebar-menu">
                 <div class="menu-label">Tổng quan</div>
-                <div class="nav-item">
-                    <a href="@Url.Action("Index", "Home")" class="nav-link @(currentController == "Home" ? "active" : "")">
-                        <i class="bi bi-grid-1x2-fill"></i>
-                        <span>Dashboard</span>
-                    </a>
-                </div>
+                @if (!isStudent && !isTeacher)
+                {
+                    <div class="nav-item">
+                        <a href="@Url.Action("Index", "Home")" class="nav-link @(currentController == "Home" ? "active" : "")">
+                            <i class="bi bi-grid-1x2-fill"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </div>
+                }
 
                 @if (isTeacher || isStudent)
                 {
@@ -83,6 +86,12 @@
                         <a href="@Url.Action("Index", "PaymentHistory")" class="nav-link @(currentController == "PaymentHistory" ? "active" : "")">
                             <i class="bi bi-wallet2"></i>
                             <span>Lịch sử thanh toán</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="@Url.Action("Index", "Materials")" class="nav-link @(currentController == "Materials" ? "active" : "")">
+                            <i class="bi bi-file-earmark-arrow-up-fill"></i>
+                            <span>Tài liệu học tập</span>
                         </a>
                     </div>
                 }
@@ -155,7 +164,7 @@
                             <span>Điểm danh</span>
                         </a>
                     </div>
-                    @if (isTeacher || isAdmin)
+                    @if (isTeacher)
                     {
                         <div class="nav-item">
                             <a href="@Url.Action("Index", "Grades")" class="nav-link @(currentController == "Grades" ? "active" : "")">
@@ -164,6 +173,15 @@
                             </a>
                         </div>
                     }
+                }
+                @if (isTeacher || isAdmin || isStaff)
+                {
+                    <div class="nav-item">
+                        <a href="@Url.Action("Index", "Materials")" class="nav-link @(currentController == "Materials" ? "active" : "")">
+                            <i class="bi bi-file-earmark-arrow-up-fill"></i>
+                            <span>Học liệu & Tài liệu</span>
+                        </a>
+                    </div>
                 }
                 @if (canManageUsers)
                 {

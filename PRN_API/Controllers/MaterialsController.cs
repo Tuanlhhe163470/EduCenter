@@ -44,14 +44,16 @@ namespace PRN_API.Controllers
         [Authorize(Roles = "Admin,Teacher,Staff")]
         public async Task<IActionResult> AddMaterial([FromBody] MaterialDTO dto)
         {
+            var targetClass = await _context.Classes.FindAsync(dto.ClassId);
+            if (targetClass == null) return BadRequest("Lớp học không tồn tại.");
+
             // Kiểm tra quyền giáo viên
             if (User.IsInRole("Teacher") && !User.IsInRole("Admin"))
             {
-                var targetClass = await _context.Classes.FindAsync(dto.ClassId);
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (int.TryParse(userIdStr, out int teacherId))
                 {
-                    if (targetClass != null && targetClass.TeacherId != teacherId) return Forbid();
+                    if (targetClass.TeacherId != teacherId) return Forbid();
                 }
             }
 
